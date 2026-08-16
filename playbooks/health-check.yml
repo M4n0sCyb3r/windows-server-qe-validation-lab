@@ -1,0 +1,31 @@
+---
+- name: Windows Server Health Check
+  hosts: windows
+  gather_facts: true
+
+  tasks:
+    - name: Show Windows hostname
+      ansible.windows.win_command: hostname
+      register: hostname_result
+
+    - name: Display hostname
+      ansible.builtin.debug:
+        var: hostname_result.stdout
+
+    - name: Check DNS service
+      ansible.windows.win_service:
+        name: DNS
+      register: dns_service
+
+    - name: Display DNS status
+      ansible.builtin.debug:
+        msg: "DNS service is {{ dns_service.state }}"
+
+    - name: Check Active Directory service
+      ansible.windows.win_service:
+        name: NTDS
+      register: ntds_service
+
+    - name: Display AD status
+      ansible.builtin.debug:
+        msg: "Active Directory service is {{ ntds_service.state }}"
