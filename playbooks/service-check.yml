@@ -1,0 +1,14 @@
+---
+- name: Windows Service Check
+  hosts: windows
+  gather_facts: false
+
+  tasks:
+    - name: Check DNS service
+      ansible.windows.win_service:
+        name: DNS
+      register: dns_service
+
+    - name: Display DNS service status
+      ansible.builtin.debug:
+        msg: "DNS service is {{ dns_service.state }}"
