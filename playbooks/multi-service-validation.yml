@@ -1,0 +1,22 @@
+---
+- name: Windows Multi-Service Validation
+  hosts: windows
+  gather_facts: false
+
+  tasks:
+    - name: Check critical Windows services
+      ansible.windows.win_service:
+        name: "{{ item }}"
+      loop:
+        - DNS
+        - NTDS
+        - WinRM
+      register: service_results
+
+    - name: Validate critical services are running
+      ansible.builtin.assert:
+        that:
+          - item.state == "running"
+        success_msg: "PASS: {{ item.name }} is running"
+        fail_msg: "FAIL: {{ item.name }} is not running"
+      loop: "{{ service_results.results }}"
