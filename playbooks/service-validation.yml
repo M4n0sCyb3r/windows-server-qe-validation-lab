@@ -1,0 +1,17 @@
+---
+- name: Windows Service Validation
+  hosts: windows
+  gather_facts: false
+
+  tasks:
+    - name: Check DNS service
+      ansible.windows.win_service:
+        name: DNS
+      register: dns_service
+
+    - name: Validate DNS service is running
+      ansible.builtin.assert:
+        that:
+          - dns_service.state == "running"
+        success_msg: "PASS: DNS service is running"
+        fail_msg: "FAIL: DNS service is not running"
