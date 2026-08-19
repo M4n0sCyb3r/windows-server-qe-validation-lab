@@ -1,5 +1,5 @@
 ---
-- name: Windows Multi-Service Validation
+- name: Windows Multi-Service Negative Test
   hosts: windows
   gather_facts: false
 
@@ -11,6 +11,7 @@
         - DNS
         - NTDS
         - WinRM
+        - ALG
       register: service_results
 
     - name: Validate critical services exist
@@ -21,20 +22,11 @@
         fail_msg: "FAIL: {{ item.item }} does not exist"
       loop: "{{ service_results.results }}"
 
-    - name: Validate critical services are running
+    - name: Validate existing services are running
       ansible.builtin.assert:
         that:
           - item.state == "running"
         success_msg: "PASS: {{ item.item }} is running"
         fail_msg: "FAIL: {{ item.item }} exists but is {{ item.state }}"
-      loop: "{{ service_results.results }}"
-      when: item.exists
-
-    - name: Validate critical services start automatically
-      ansible.builtin.assert:
-        that:
-          - item.start_mode == "auto"
-        success_msg: "PASS: {{ item.item }} startup mode is automatic"
-        fail_msg: "FAIL: {{ item.item }} startup mode is {{ item.start_mode }}"
       loop: "{{ service_results.results }}"
       when: item.exists

@@ -1,0 +1,23 @@
+---
+- name: Windows DNS Client Validation
+  hosts: windows
+  gather_facts: false
+
+  tasks:
+    - name: Collect DNS client configuration
+      ansible.windows.win_powershell:
+        script: |
+          $dns = Get-DnsClientServerAddress `
+            -InterfaceAlias "Ethernet" `
+            -AddressFamily IPv4
+
+          $dns.ServerAddresses
+      register: dns_client
+      changed_when: false
+
+    - name: Validate DC01 DNS client configuration
+      ansible.builtin.assert:
+        that:
+          - "'127.0.0.1' in dns_client.output"
+        success_msg: "PASS: Ethernet DNS client includes 127.0.0.1"
+        fail_msg: "FAIL: Ethernet DNS client does not include expected DNS server 127.0.0.1"

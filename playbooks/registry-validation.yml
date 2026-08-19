@@ -1,0 +1,20 @@
+---
+- name: Windows Registry Validation
+  hosts: windows
+  gather_facts: false
+
+  tasks:
+    - name: Collect SMB signing registry value
+      ansible.windows.win_powershell:
+        script: |
+          (Get-ItemProperty `
+            -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters").requiresecuritysignature
+      register: registry_result
+      changed_when: false
+
+    - name: Validate SMB signing is required
+      ansible.builtin.assert:
+        that:
+          - registry_result.output[0] == 1
+        success_msg: "PASS: SMB signing is required"
+        fail_msg: "FAIL: SMB signing is not required"
