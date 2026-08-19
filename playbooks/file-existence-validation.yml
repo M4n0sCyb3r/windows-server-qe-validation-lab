@@ -1,0 +1,19 @@
+---
+- name: Windows File Existence Validation
+  hosts: windows
+  gather_facts: false
+
+  tasks:
+    - name: Check hosts file exists
+      ansible.windows.win_powershell:
+        script: |
+          Test-Path "C:\Windows\System32\drivers\etc\hosts"
+      register: file_result
+      changed_when: false
+
+    - name: Validate hosts file exists
+      ansible.builtin.assert:
+        that:
+          - file_result.output[0] == true
+        success_msg: "PASS: hosts file exists"
+        fail_msg: "FAIL: hosts file does not exist"
