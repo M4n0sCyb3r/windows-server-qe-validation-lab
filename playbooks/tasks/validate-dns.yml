@@ -14,5 +14,14 @@
   ansible.builtin.assert:
     that:
       - dns_client_server in dns_client.output
+    quiet: true
     success_msg: "PASS: Ethernet DNS client includes {{ dns_client_server }}"
     fail_msg: "FAIL: Ethernet DNS client does not include expected DNS server {{ dns_client_server }}"
+
+- name: Report DNS client validation result
+  ansible.builtin.debug:
+    msg:
+      test: "DNS Client"
+      expected: "{{ dns_client_server }}"
+      actual: "{{ dns_client.output }}"
+      result: "{{ 'PASS' if dns_client_server in dns_client.output else 'FAIL' }}"

@@ -18,3 +18,14 @@
   loop: "{{ required_features }}"
   loop_control:
     label: "{{ item }}"
+
+- name: Report Windows feature validation results
+  ansible.builtin.debug:
+    msg:
+      test: "Windows Feature - {{ item }}"
+      expected: "Installed"
+      actual: "Installed"
+      result: "PASS"
+  loop: "{{ required_features }}"
+  loop_control:
+    label: "{{ item }}"

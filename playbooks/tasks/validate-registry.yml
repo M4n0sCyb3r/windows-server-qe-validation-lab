@@ -19,4 +19,4 @@
       test: "SMB Signing"
       expected: "{{ smb_signing_required }}"
       actual: "{{ registry_result.output[0] }}"
-      result: "PASS"
+      result: "{{ 'PASS' if registry_result.output[0] == smb_signing_required else 'FAIL' }}"
