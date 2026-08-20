@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+echo "========================================"
+echo "Windows Server QE CI Checks"
+echo "========================================"
+echo
+
+echo "[1/4] Checking Python syntax..."
+python -m py_compile scripts/qe_report.py
+echo "PASS: Python syntax"
+echo
+
+echo "[2/4] Checking Bash syntax..."
+bash -n scripts/run-qe-validation.sh
+bash -n scripts/run-qe-negative-test.sh
+bash -n scripts/run-qe-missing-report-test.sh
+bash -n scripts/test-qe-harness.sh
+echo "PASS: Bash syntax"
+echo
+
+echo "[3/4] Checking Ansible playbook syntax..."
+ansible-playbook \
+  -i inventory/hosts.yml \
+  playbooks/dc01-validation-suite.yml \
+  --syntax-check \
+  --ask-vault-password
+echo "PASS: Ansible syntax"
+echo
+
+echo "[4/4] Running QE harness self-tests..."
+./scripts/test-qe-harness.sh
+echo
+
+echo "========================================"
+echo "ALL CI CHECKS PASSED"
+echo "========================================"
