@@ -21,3 +21,13 @@
 
     - name: Validate required files
       ansible.builtin.import_tasks: tasks/validate-files.yml
+    
+    - name: Display DC01 validation summary
+      ansible.builtin.debug:
+        msg:
+          - "DC01 QE Validation Summary"
+          - "Required services: {{ required_services }}"
+          - "Required features: {{ required_features }}"
+          - "Expected DNS client: {{ dns_client_server }}"
+          - "Expected SMB signing value: {{ smb_signing_required }}"
+          - "Required files: {{ required_files }}"
