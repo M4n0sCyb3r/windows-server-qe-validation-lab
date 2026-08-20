@@ -53,3 +53,51 @@
       expected: "{{ required_file_content.hosts.expected_text }}"
       actual: "{{ hosts_content.output }}"
       result: "{{ 'PASS' if required_file_content.hosts.expected_text in (hosts_content.output | string) else 'FAIL' }}"
+
+- name: Add required file results to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'Required File - ' ~ item.item,
+              'expected': {
+                'exists': true
+              },
+              'actual': {
+                'exists': item.output[0]
+              },
+              'result': (
+                'PASS'
+                if item.output[0] == true
+                else 'FAIL'
+              )
+            }
+          ]
+      }}
+  loop: "{{ file_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  changed_when: false
+
+- name: Add hosts file content result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'Hosts File Content',
+              'expected': required_file_content.hosts.expected_text,
+              'actual': hosts_content.output,
+              'result': (
+                'PASS'
+                if required_file_content.hosts.expected_text
+                   in (hosts_content.output | string)
+                else 'FAIL'
+              )
+            }
+          ]
+      }}
+  changed_when: false

@@ -20,3 +20,22 @@
       expected: "{{ smb_signing_required }}"
       actual: "{{ registry_result.output[0] }}"
       result: "{{ 'PASS' if registry_result.output[0] == smb_signing_required else 'FAIL' }}"
+- name: Add SMB signing result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'SMB Signing',
+              'expected': smb_signing_required,
+              'actual': registry_result.output[0],
+              'result': (
+                'PASS'
+                if registry_result.output[0] == smb_signing_required
+                else 'FAIL'
+              )
+            }
+          ]
+      }}
+  changed_when: false

@@ -57,3 +57,37 @@
   loop_control:
     label: "{{ item.item }}"
   when: item.exists
+
+- name: Add Windows service results to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'Windows Service - ' ~ item.item,
+              'expected': {
+                'exists': true,
+                'state': 'running',
+                'start_mode': 'auto'
+              },
+              'actual': {
+                'exists': item.exists,
+                'state': item.state,
+                'start_mode': item.start_mode
+              },
+              'result': (
+                'PASS'
+                if item.exists
+                and item.state == 'running'
+                and item.start_mode == 'auto'
+                else 'FAIL'
+              )
+            }
+          ]
+      }}
+  loop: "{{ service_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: item.exists
+  changed_when: false

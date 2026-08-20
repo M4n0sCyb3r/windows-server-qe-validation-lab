@@ -25,3 +25,23 @@
       expected: "{{ dns_client_server }}"
       actual: "{{ dns_client.output }}"
       result: "{{ 'PASS' if dns_client_server in dns_client.output else 'FAIL' }}"
+
+- name: Add DNS client result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'DNS Client',
+              'expected': dns_client_server,
+              'actual': dns_client.output,
+              'result': (
+                'PASS'
+                if dns_client_server in dns_client.output
+                else 'FAIL'
+              )
+            }
+          ]
+      }}
+  changed_when: false

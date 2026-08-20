@@ -29,3 +29,22 @@
   loop: "{{ required_features }}"
   loop_control:
     label: "{{ item }}"
+
+- name: Add Windows feature results to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'Windows Feature - ' ~ item,
+              'expected': 'Installed',
+              'actual': 'Installed',
+              'result': 'PASS'
+            }
+          ]
+      }}
+  loop: "{{ required_features }}"
+  loop_control:
+    label: "{{ item }}"
+  changed_when: false

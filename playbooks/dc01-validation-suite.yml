@@ -7,6 +7,11 @@
     - ../vars/dc01-baseline.yml
 
   tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+    
     - name: Validate required services
       ansible.builtin.import_tasks: tasks/validate-services.yml
 
@@ -31,3 +36,6 @@
           - "Expected DNS client: {{ dns_client_server }}"
           - "Expected SMB signing value: {{ smb_signing_required }}"
           - "Required files: {{ required_files }}"
+    - name: Display collected QE results
+      ansible.builtin.debug:
+        var: qe_results
