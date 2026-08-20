@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-echo "Running DC01 Windows Server QE validation..."
+REPORT_FILE="reports/dc01-qe-results.json"
+
+echo "========================================"
+echo "DC01 Windows Server QE Validation"
+echo "========================================"
+echo
+
+echo "[1/2] Running Ansible validation suite..."
 echo
 
 ansible-playbook \
@@ -11,7 +18,16 @@ ansible-playbook \
   --ask-vault-password
 
 echo
-echo "Generating QE report..."
+echo "[2/2] Running Python QE report..."
 echo
 
-python scripts/qe_report.py
+if [[ ! -f "$REPORT_FILE" ]]; then
+    echo "ERROR: Expected report file was not created:"
+    echo "  $REPORT_FILE"
+    exit 2
+fi
+
+python scripts/qe_report.py "$REPORT_FILE"
+
+echo
+echo "QE validation workflow completed successfully."
