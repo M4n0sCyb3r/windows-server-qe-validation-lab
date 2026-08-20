@@ -12,6 +12,9 @@
     that:
       - item in (feature_results.output | string)
       - "'Installed' in (feature_results.output | string)"
+    quiet: true
     success_msg: "PASS: {{ item }} is installed"
     fail_msg: "FAIL: {{ item }} is not installed"
   loop: "{{ required_features }}"
+  loop_control:
+    label: "{{ item }}"

@@ -9,24 +9,33 @@
   ansible.builtin.assert:
     that:
       - item.exists
+    quiet: true
     success_msg: "PASS: {{ item.item }} exists"
     fail_msg: "FAIL: {{ item.item }} does not exist"
   loop: "{{ service_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
 
 - name: Validate critical services are running
   ansible.builtin.assert:
     that:
       - item.state == "running"
+    quiet: true
     success_msg: "PASS: {{ item.item }} is running"
     fail_msg: "FAIL: {{ item.item }} exists but is {{ item.state }}"
   loop: "{{ service_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
   when: item.exists
 
 - name: Validate critical services start automatically
   ansible.builtin.assert:
     that:
       - item.start_mode == "auto"
+    quiet: true
     success_msg: "PASS: {{ item.item }} startup mode is automatic"
     fail_msg: "FAIL: {{ item.item }} startup mode is {{ item.start_mode }}"
   loop: "{{ service_results.results }}"
+  loop_control:
+    label: "{{ item.item }}"
   when: item.exists
