@@ -39,3 +39,12 @@
     - name: Display collected QE results
       ansible.builtin.debug:
         var: qe_results
+
+    - name: Export QE results to JSON
+      ansible.builtin.copy:
+        content: "{{ qe_results | to_nice_json }}"
+        dest: "../reports/dc01-qe-results.json"
+        mode: "0644"
+      delegate_to: localhost
+      run_once: true
+      changed_when: false

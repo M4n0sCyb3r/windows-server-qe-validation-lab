@@ -2,4 +2,4 @@
 .vault_password
 __pycache__/
 *.pyc
-reports/*.txt
+reports/
