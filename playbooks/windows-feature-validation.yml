@@ -3,20 +3,23 @@
   hosts: windows
   gather_facts: false
 
+  vars_files:
+    - ../vars/dc01-baseline.yml
+
   tasks:
     - name: Collect Windows feature state
       ansible.windows.win_powershell:
         script: |
-          Get-WindowsFeature AD-Domain-Services,DNS |
+          Get-WindowsFeature {{ required_features | join(',') }} |
             Select-Object Name, InstallState
       register: feature_results
       changed_when: false
 
-    - name: Validate AD DS and DNS are installed
+    - name: Validate required Windows features are installed
       ansible.builtin.assert:
         that:
-          - "'AD-Domain-Services' in (feature_results.output | string)"
-          - "'DNS' in (feature_results.output | string)"
+          - item in (feature_results.output | string)
           - "'Installed' in (feature_results.output | string)"
-        success_msg: "PASS: AD DS and DNS Windows features are installed"
-        fail_msg: "FAIL: One or more required Windows features are not installed"
+        success_msg: "PASS: {{ item }} is installed"
+        fail_msg: "FAIL: {{ item }} is not installed"
+      loop: "{{ required_features }}"

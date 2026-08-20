@@ -1,0 +1,15 @@
+---
+- name: Collect SMB signing registry value
+  ansible.windows.win_powershell:
+    script: |
+      (Get-ItemProperty `
+        -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters").requiresecuritysignature
+  register: registry_result
+  changed_when: false
+
+- name: Validate SMB signing against baseline
+  ansible.builtin.assert:
+    that:
+      - registry_result.output[0] == smb_signing_required
+    success_msg: "PASS: SMB signing matches baseline value {{ smb_signing_required }}"
+    fail_msg: "FAIL: SMB signing does not match baseline value {{ smb_signing_required }}"

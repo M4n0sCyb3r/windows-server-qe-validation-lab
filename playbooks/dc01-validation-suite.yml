@@ -1,0 +1,23 @@
+---
+- name: DC01 Windows Server QE Validation Suite
+  hosts: windows
+  gather_facts: false
+
+  vars_files:
+    - ../vars/dc01-baseline.yml
+
+  tasks:
+    - name: Validate required services
+      ansible.builtin.import_tasks: tasks/validate-services.yml
+
+    - name: Validate DNS client configuration
+      ansible.builtin.import_tasks: tasks/validate-dns.yml
+
+    - name: Validate required Windows features
+      ansible.builtin.import_tasks: tasks/validate-features.yml
+
+    - name: Validate registry configuration
+      ansible.builtin.import_tasks: tasks/validate-registry.yml
+
+    - name: Validate required files
+      ansible.builtin.import_tasks: tasks/validate-files.yml

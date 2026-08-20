@@ -1,0 +1,17 @@
+---
+- name: Collect Windows feature state
+  ansible.windows.win_powershell:
+    script: |
+      Get-WindowsFeature {{ required_features | join(',') }} |
+        Select-Object Name, InstallState
+  register: feature_results
+  changed_when: false
+
+- name: Validate required Windows features are installed
+  ansible.builtin.assert:
+    that:
+      - item in (feature_results.output | string)
+      - "'Installed' in (feature_results.output | string)"
+    success_msg: "PASS: {{ item }} is installed"
+    fail_msg: "FAIL: {{ item }} is not installed"
+  loop: "{{ required_features }}"

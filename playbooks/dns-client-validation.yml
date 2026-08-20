@@ -3,6 +3,9 @@
   hosts: windows
   gather_facts: false
 
+  vars_files:
+    - ../vars/dc01-baseline.yml
+
   tasks:
     - name: Collect DNS client configuration
       ansible.windows.win_powershell:
@@ -18,6 +21,6 @@
     - name: Validate DC01 DNS client configuration
       ansible.builtin.assert:
         that:
-          - "'127.0.0.1' in dns_client.output"
-        success_msg: "PASS: Ethernet DNS client includes 127.0.0.1"
-        fail_msg: "FAIL: Ethernet DNS client does not include expected DNS server 127.0.0.1"
+          - dns_client_server in dns_client.output
+        success_msg: "PASS: Ethernet DNS client includes {{ dns_client_server }}"
+        fail_msg: "FAIL: Ethernet DNS client does not include expected DNS server {{ dns_client_server }}"

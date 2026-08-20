@@ -1,0 +1,20 @@
+---
+required_services:
+  - DNS
+  - NTDS
+  - WinRM
+
+dns_client_server: "127.0.0.1"
+
+required_features:
+  - AD-Domain-Services
+  - DNS
+
+smb_signing_required: 1
+
+required_files:
+  - 'C:\Windows\System32\drivers\etc\hosts'
+required_file_content:
+  hosts:
+    path: 'C:\Windows\System32\drivers\etc\hosts'
+    expected_text: '# localhost name resolution is handled within DNS itself.'

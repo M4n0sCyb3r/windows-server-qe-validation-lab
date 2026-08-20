@@ -1,0 +1,32 @@
+---
+- name: Check critical Windows services
+  ansible.windows.win_service:
+    name: "{{ item }}"
+  loop: "{{ required_services }}"
+  register: service_results
+
+- name: Validate critical services exist
+  ansible.builtin.assert:
+    that:
+      - item.exists
+    success_msg: "PASS: {{ item.item }} exists"
+    fail_msg: "FAIL: {{ item.item }} does not exist"
+  loop: "{{ service_results.results }}"
+
+- name: Validate critical services are running
+  ansible.builtin.assert:
+    that:
+      - item.state == "running"
+    success_msg: "PASS: {{ item.item }} is running"
+    fail_msg: "FAIL: {{ item.item }} exists but is {{ item.state }}"
+  loop: "{{ service_results.results }}"
+  when: item.exists
+
+- name: Validate critical services start automatically
+  ansible.builtin.assert:
+    that:
+      - item.start_mode == "auto"
+    success_msg: "PASS: {{ item.item }} startup mode is automatic"
+    fail_msg: "FAIL: {{ item.item }} startup mode is {{ item.start_mode }}"
+  loop: "{{ service_results.results }}"
+  when: item.exists

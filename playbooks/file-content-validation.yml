@@ -3,17 +3,20 @@
   hosts: windows
   gather_facts: false
 
+  vars_files:
+    - ../vars/dc01-baseline.yml
+
   tasks:
-    - name: Collect hosts file content
+    - name: Collect required file content
       ansible.windows.win_powershell:
         script: |
-          Get-Content "C:\Windows\System32\drivers\etc\hosts"
+          Get-Content "{{ required_file_content.hosts.path }}"
       register: hosts_content
       changed_when: false
 
     - name: Validate expected hosts file content
       ansible.builtin.assert:
         that:
-          - "'# localhost name resolution is handled within DNS itself.' in (hosts_content.output | string)"
-        success_msg: "PASS: hosts file contains expected localhost DNS comment"
-        fail_msg: "FAIL: hosts file is missing expected localhost DNS comment"
+          - required_file_content.hosts.expected_text in (hosts_content.output | string)
+        success_msg: "PASS: hosts file contains expected baseline content"
+        fail_msg: "FAIL: hosts file is missing expected baseline content"

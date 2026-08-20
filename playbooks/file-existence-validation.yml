@@ -3,17 +3,22 @@
   hosts: windows
   gather_facts: false
 
+  vars_files:
+    - ../vars/dc01-baseline.yml
+
   tasks:
-    - name: Check hosts file exists
+    - name: Check required files exist
       ansible.windows.win_powershell:
         script: |
-          Test-Path "C:\Windows\System32\drivers\etc\hosts"
-      register: file_result
+          Test-Path "{{ item }}"
+      loop: "{{ required_files }}"
+      register: file_results
       changed_when: false
 
-    - name: Validate hosts file exists
+    - name: Validate required files exist
       ansible.builtin.assert:
         that:
-          - file_result.output[0] == true
-        success_msg: "PASS: hosts file exists"
-        fail_msg: "FAIL: hosts file does not exist"
+          - item.output[0] == true
+        success_msg: "PASS: {{ item.item }} exists"
+        fail_msg: "FAIL: {{ item.item }} does not exist"
+      loop: "{{ file_results.results }}"

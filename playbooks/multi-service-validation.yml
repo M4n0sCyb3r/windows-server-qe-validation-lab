@@ -3,14 +3,14 @@
   hosts: windows
   gather_facts: false
 
+  vars_files:
+    - ../vars/dc01-baseline.yml
+
   tasks:
     - name: Check critical Windows services
       ansible.windows.win_service:
         name: "{{ item }}"
-      loop:
-        - DNS
-        - NTDS
-        - WinRM
+      loop: "{{ required_services }}"
       register: service_results
 
     - name: Validate critical services exist

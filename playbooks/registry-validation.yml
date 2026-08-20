@@ -3,6 +3,9 @@
   hosts: windows
   gather_facts: false
 
+  vars_files:
+    - ../vars/dc01-baseline.yml
+
   tasks:
     - name: Collect SMB signing registry value
       ansible.windows.win_powershell:
@@ -15,6 +18,6 @@
     - name: Validate SMB signing is required
       ansible.builtin.assert:
         that:
-          - registry_result.output[0] == 1
-        success_msg: "PASS: SMB signing is required"
-        fail_msg: "FAIL: SMB signing is not required"
+          - registry_result.output[0] == smb_signing_required
+        success_msg: "PASS: SMB signing matches baseline value {{ smb_signing_required }}"
+        fail_msg: "FAIL: SMB signing does not match baseline value {{ smb_signing_required }}"
