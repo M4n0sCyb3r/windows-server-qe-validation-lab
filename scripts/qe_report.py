@@ -47,7 +47,14 @@ if failed_results:
         print(f"  Expected: {test['expected']}")
         print(f"  Actual:   {test['actual']}")
 
-if failed_results:
-    sys.exit(1)
+print()
+print("Overall Result")
+print("--------------")
 
-sys.exit(0)
+if failed_results:
+    print("FAIL")
+    sys.exit(1)
+else:
+    print("PASS")
+    sys.exit(0)
+
