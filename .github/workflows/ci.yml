@@ -1,0 +1,51 @@
+---
+name: Windows Server QE CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-ci:
+    name: Offline QE Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ansible
+
+      - name: Check Python syntax
+        run: |
+          python -m py_compile scripts/qe_report.py
+
+      - name: Check Bash syntax
+        run: |
+          bash -n scripts/run-qe-validation.sh
+          bash -n scripts/run-qe-negative-test.sh
+          bash -n scripts/run-qe-missing-report-test.sh
+          bash -n scripts/test-qe-harness.sh
+          bash -n scripts/run-ci-checks.sh
+
+      - name: Check Ansible playbook syntax
+        run: |
+          ansible-playbook \
+            -i localhost, \
+            playbooks/dc01-validation-suite.yml \
+            --syntax-check
+
+      - name: CI summary
+        run: |
+          echo "Offline Windows Server QE checks passed."
