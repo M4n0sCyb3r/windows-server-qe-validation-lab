@@ -1,0 +1,17 @@
+[
+  {
+    "test": "SMB Signing",
+    "expected": 0,
+    "actual": 1,
+    "result": "FAIL"
+  },
+  {
+    "test": "DNS Client",
+    "expected": "127.0.0.1",
+    "actual": [
+      "127.0.0.1"
+    ],
+    "result": "PASS"
+  }
+]
+

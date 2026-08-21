@@ -27,14 +27,14 @@ check_exit_code() {
 }
 
 check_exit_code \
-    "Good QE report" \
+    "Passing QE fixture" \
     0 \
-    python scripts/qe_report.py
+    python scripts/qe_report.py tests/fixtures/qe-results-pass.json
 
 check_exit_code \
-    "Negative QE report" \
+    "Failing QE fixture" \
     1 \
-    python scripts/qe_report.py reports/dc01-qe-results-negative.json
+    python scripts/qe_report.py tests/fixtures/qe-results-fail.json
 
 check_exit_code \
     "Missing report workflow" \

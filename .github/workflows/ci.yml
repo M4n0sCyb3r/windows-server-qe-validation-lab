@@ -46,6 +46,10 @@ jobs:
             playbooks/dc01-validation-suite.yml \
             --syntax-check
 
+      - name: Run QE harness self-tests
+        run: |
+          ./scripts/test-qe-harness.sh
+
       - name: CI summary
         run: |
           echo "Offline Windows Server QE checks passed."
