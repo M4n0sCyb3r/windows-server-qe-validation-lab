@@ -1,5 +1,7 @@
 # Windows Server QE Validation Lab
 
+[![Windows Server QE CI](https://github.com/M4n0sCyb3r/windows-server-qe-validation-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/M4n0sCyb3r/windows-server-qe-validation-lab/actions/workflows/ci.yml)
+
 A hands-on Windows Server Quality Engineering lab for building repeatable, baseline-driven infrastructure validation using PowerShell, Ansible, JSON, Python, Bash, and Git.
 
 ## Project Overview
