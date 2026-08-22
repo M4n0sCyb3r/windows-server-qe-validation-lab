@@ -25,3 +25,5 @@ system_event_log:
   enabled: true
   maximum_size_bytes: 20971520
   log_mode: "Circular"
+
+winrm_basic_auth_enabled: false

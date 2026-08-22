@@ -30,6 +30,9 @@
     - name: Validate System event log configuration
       ansible.builtin.import_tasks: tasks/validate-event-log.yml
 
+    - name: Validate WinRM authentication configuration
+      ansible.builtin.import_tasks: tasks/validate-winrm-auth.yml
+
     - name: Validate required files
       ansible.builtin.import_tasks: tasks/validate-files.yml
     

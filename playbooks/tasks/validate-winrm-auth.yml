@@ -1,0 +1,59 @@
+---
+- name: Collect WinRM Basic authentication setting
+  ansible.windows.win_powershell:
+    script: |
+      $basic = Get-Item WSMan:\localhost\Service\Auth\Basic
+
+      [PSCustomObject]@{
+          Name  = $basic.Name
+          Value = [bool]::Parse([string]$basic.Value)
+      }
+  register: winrm_auth_result
+  changed_when: false
+
+- name: Validate WinRM Basic authentication against baseline
+  ansible.builtin.assert:
+    that:
+      - (winrm_auth_result.output[0].Value | bool) == (winrm_basic_auth_enabled | bool)
+    quiet: true
+    success_msg: "PASS: WinRM Basic authentication matches baseline"
+    fail_msg: "FAIL: WinRM Basic authentication does not match baseline"
+
+- name: Report WinRM Basic authentication validation result
+  ansible.builtin.debug:
+    msg:
+      test: "WinRM Basic Authentication"
+      expected:
+        enabled: "{{ winrm_basic_auth_enabled | bool }}"
+      actual:
+        enabled: "{{ winrm_auth_result.output[0].Value | bool }}"
+      result: >-
+        {{
+          'PASS'
+          if (winrm_auth_result.output[0].Value | bool) == (winrm_basic_auth_enabled | bool)
+          else 'FAIL'
+        }}
+
+- name: Add WinRM Basic authentication result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'WinRM Basic Authentication',
+              'expected': {
+                'enabled': winrm_basic_auth_enabled | bool
+              },
+              'actual': {
+                'enabled': winrm_auth_result.output[0].Value | bool
+              },
+              'result': (
+                'PASS'
+                if (winrm_auth_result.output[0].Value | bool) == (winrm_basic_auth_enabled | bool)
+                else 'FAIL'
+              )
+            }
+          ]
+      }}
+  changed_when: false
