@@ -24,6 +24,9 @@
     - name: Validate registry configuration
       ansible.builtin.import_tasks: tasks/validate-registry.yml
 
+    - name: Validate Windows Firewall configuration
+      ansible.builtin.import_tasks: tasks/validate-firewall.yml
+
     - name: Validate required files
       ansible.builtin.import_tasks: tasks/validate-files.yml
     
