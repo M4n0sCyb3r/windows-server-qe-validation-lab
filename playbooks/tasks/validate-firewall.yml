@@ -1,0 +1,59 @@
+---
+- name: Collect Domain firewall profile state
+  ansible.windows.win_powershell:
+    script: |
+      $profile = Get-NetFirewallProfile -Name Domain
+
+      [PSCustomObject]@{
+          Name    = $profile.Name
+          Enabled = [bool]$profile.Enabled
+      }
+  register: firewall_result
+  changed_when: false
+
+- name: Validate Domain firewall against baseline
+  ansible.builtin.assert:
+    that:
+      - (firewall_result.output[0].Enabled | bool) == (firewall_domain_enabled | bool)
+    quiet: true
+    success_msg: "PASS: Domain firewall enabled state matches baseline"
+    fail_msg: "FAIL: Domain firewall enabled state does not match baseline"
+
+- name: Report Domain firewall validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Windows Firewall - Domain Profile"
+      expected:
+        enabled: "{{ firewall_domain_enabled | bool }}"
+      actual:
+        enabled: "{{ firewall_result.output[0].Enabled | bool }}"
+      result: >-
+        {{
+          'PASS'
+          if (firewall_result.output[0].Enabled | bool) == (firewall_domain_enabled | bool)
+          else 'FAIL'
+        }}
+
+- name: Add Domain firewall result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'Windows Firewall - Domain Profile',
+              'expected': {
+                'enabled': firewall_domain_enabled | bool
+              },
+              'actual': {
+                'enabled': firewall_result.output[0].Enabled | bool
+              },
+              'result': (
+                'PASS'
+                if (firewall_result.output[0].Enabled | bool) == (firewall_domain_enabled | bool)
+                else 'FAIL'
+              )
+            }
+          ]
+      }}
+  changed_when: false

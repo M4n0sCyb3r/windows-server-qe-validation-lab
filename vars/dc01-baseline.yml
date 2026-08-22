@@ -18,3 +18,5 @@ required_file_content:
   hosts:
     path: 'C:\Windows\System32\drivers\etc\hosts'
     expected_text: '# localhost name resolution is handled within DNS itself.'
+
+firewall_domain_enabled: true
