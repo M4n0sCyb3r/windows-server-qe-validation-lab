@@ -1,0 +1,83 @@
+---
+- name: Collect System event log configuration
+  ansible.windows.win_powershell:
+    script: |
+      $log = Get-WinEvent -ListLog System
+
+      [PSCustomObject]@{
+          LogName            = $log.LogName
+          IsEnabled          = [bool]$log.IsEnabled
+          MaximumSizeInBytes = [int64]$log.MaximumSizeInBytes
+          LogMode            = [string]$log.LogMode
+      }
+  register: event_log_result
+  changed_when: false
+
+- name: Validate System event log configuration
+  ansible.builtin.assert:
+    that:
+      - (event_log_result.output[0].IsEnabled | bool) == (system_event_log.enabled | bool)
+      - (event_log_result.output[0].MaximumSizeInBytes | int) == (system_event_log.maximum_size_bytes | int)
+      - event_log_result.output[0].LogMode == system_event_log.log_mode
+    quiet: true
+    success_msg: "PASS: System event log configuration matches baseline"
+    fail_msg: "FAIL: System event log configuration does not match baseline"
+
+- name: Report System event log validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Windows Event Log - System"
+      expected:
+        enabled: "{{ system_event_log.enabled | bool }}"
+        maximum_size_bytes: "{{ system_event_log.maximum_size_bytes | int }}"
+        log_mode: "{{ system_event_log.log_mode }}"
+      actual:
+        enabled: "{{ event_log_result.output[0].IsEnabled | bool }}"
+        maximum_size_bytes: "{{ event_log_result.output[0].MaximumSizeInBytes | int }}"
+        log_mode: "{{ event_log_result.output[0].LogMode }}"
+      result: >-
+        {{
+          'PASS'
+          if
+            (event_log_result.output[0].IsEnabled | bool) == (system_event_log.enabled | bool)
+            and
+            (event_log_result.output[0].MaximumSizeInBytes | int) == (system_event_log.maximum_size_bytes | int)
+            and
+            event_log_result.output[0].LogMode == system_event_log.log_mode
+          else
+            'FAIL'
+        }}
+
+- name: Add System event log result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results
+        + [
+            {
+              'test': 'Windows Event Log - System',
+              'expected': {
+                'enabled': system_event_log.enabled | bool,
+                'maximum_size_bytes': system_event_log.maximum_size_bytes | int,
+                'log_mode': system_event_log.log_mode
+              },
+              'actual': {
+                'enabled': event_log_result.output[0].IsEnabled | bool,
+                'maximum_size_bytes': event_log_result.output[0].MaximumSizeInBytes | int,
+                'log_mode': event_log_result.output[0].LogMode
+              },
+              'result': (
+                'PASS'
+                if
+                  (event_log_result.output[0].IsEnabled | bool) == (system_event_log.enabled | bool)
+                  and
+                  (event_log_result.output[0].MaximumSizeInBytes | int) == (system_event_log.maximum_size_bytes | int)
+                  and
+                  event_log_result.output[0].LogMode == system_event_log.log_mode
+                else
+                  'FAIL'
+              )
+            }
+          ]
+      }}
+  changed_when: false

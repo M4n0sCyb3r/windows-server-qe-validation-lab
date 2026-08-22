@@ -20,3 +20,8 @@ required_file_content:
     expected_text: '# localhost name resolution is handled within DNS itself.'
 
 firewall_domain_enabled: true
+
+system_event_log:
+  enabled: true
+  maximum_size_bytes: 20971520
+  log_mode: "Circular"
