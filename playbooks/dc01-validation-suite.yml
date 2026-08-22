@@ -27,6 +27,9 @@
     - name: Validate Windows Firewall configuration
       ansible.builtin.import_tasks: tasks/validate-firewall.yml
 
+    - name: Validate System event log configuration
+      ansible.builtin.import_tasks: tasks/validate-event-log.yml
+
     - name: Validate required files
       ansible.builtin.import_tasks: tasks/validate-files.yml
     
