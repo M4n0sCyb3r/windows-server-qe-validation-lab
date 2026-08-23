@@ -1,0 +1,40 @@
+---
+- name: SRV01 Windows Server QE Validation Suite
+  hosts: srv01
+  gather_facts: false
+
+  vars_files:
+    - ../vars/srv01-baseline.yml
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Validate required services
+      ansible.builtin.import_tasks: tasks/validate-services.yml
+
+    - name: Validate DNS client configuration
+      ansible.builtin.import_tasks: tasks/validate-dns.yml
+
+    - name: Validate required Windows features
+      ansible.builtin.import_tasks: tasks/validate-features.yml
+
+    - name: Validate Windows Firewall configuration
+      ansible.builtin.import_tasks: tasks/validate-firewall.yml
+
+    - name: Validate System event log configuration
+      ansible.builtin.import_tasks: tasks/validate-event-log.yml
+
+    - name: Display SRV01 validation summary
+      ansible.builtin.debug:
+        msg:
+          - "SRV01 QE Validation Summary"
+          - "Required services: {{ required_services }}"
+          - "Required features: {{ required_features }}"
+          - "Expected DNS client: {{ dns_client_server }}"
+          - "Expected Domain firewall enabled: {{ firewall_domain_enabled }}"
+          - "Expected System log enabled: {{ system_event_log.enabled }}"
+          - "Expected System log size: {{ system_event_log.maximum_size_bytes }}"
+          - "Expected System log mode: {{ system_event_log.log_mode }}"
