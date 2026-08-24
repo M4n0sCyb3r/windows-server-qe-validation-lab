@@ -1,0 +1,16 @@
+---
+required_services:
+  - WinRM
+
+required_features:
+  - Windows-Defender
+  - PowerShell
+
+dns_client_server: "10.10.10.10"
+
+firewall_domain_enabled: true
+
+system_event_log:
+  enabled: true
+  maximum_size_bytes: 20971520
+  log_mode: "Circular"
