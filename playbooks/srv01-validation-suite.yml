@@ -11,21 +11,33 @@
       ansible.builtin.set_fact:
         qe_results: []
       changed_when: false
+      tags:
+        - always
 
     - name: Validate required services
       ansible.builtin.import_tasks: tasks/validate-services.yml
+      tags:
+        - services
 
     - name: Validate DNS client configuration
       ansible.builtin.import_tasks: tasks/validate-dns.yml
+      tags:
+        - dns
 
     - name: Validate required Windows features
       ansible.builtin.import_tasks: tasks/validate-features.yml
+      tags:
+        - features
 
     - name: Validate Windows Firewall configuration
       ansible.builtin.import_tasks: tasks/validate-firewall.yml
+      tags:
+        - firewall
 
     - name: Validate System event log configuration
       ansible.builtin.import_tasks: tasks/validate-event-log.yml
+      tags:
+        - eventlog
 
     - name: Display SRV01 validation summary
       ansible.builtin.debug:
@@ -38,3 +50,16 @@
           - "Expected System log enabled: {{ system_event_log.enabled }}"
           - "Expected System log size: {{ system_event_log.maximum_size_bytes }}"
           - "Expected System log mode: {{ system_event_log.log_mode }}"
+
+    - name: Display collected QE results
+      ansible.builtin.debug:
+        var: qe_results
+
+    - name: Export QE results to JSON
+      ansible.builtin.copy:
+        content: "{{ qe_results | to_nice_json }}"
+        dest: "../reports/srv01-qe-results.json"
+        mode: "0644"
+      delegate_to: localhost
+      run_once: true
+      changed_when: false

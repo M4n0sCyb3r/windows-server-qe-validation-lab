@@ -1,32 +1,43 @@
+#!/usr/bin/env python3
+
 import json
+import os
 import sys
 
-DEFAULT_REPORT_FILE = "reports/dc01-qe-results.json"
+default_report = "reports/dc01-qe-results.json"
+report_file = sys.argv[1] if len(sys.argv) > 1 else default_report
 
-if len(sys.argv) > 1:
-    report_file = sys.argv[1]
-else:
-    report_file = DEFAULT_REPORT_FILE
+if not os.path.exists(report_file):
+    print("ERROR: Expected report file was not created:")
+    print(f"  {report_file}")
+    sys.exit(2)
 
 with open(report_file, "r", encoding="utf-8") as file:
     results = json.load(file)
 
-total_tests = len(results)
+failed_results = [
+    test for test in results
+    if test.get("result") == "FAIL"
+]
 
 passed_results = [
     test for test in results
-    if test["result"] == "PASS"
+    if test.get("result") == "PASS"
 ]
 
-failed_results = [
-    test for test in results
-    if test["result"] == "FAIL"
-]
+report_name = os.path.basename(report_file)
 
-print("DC01 QE Validation Report")
+if report_name.startswith("dc01"):
+    system_name = "DC01"
+elif report_name.startswith("srv01"):
+    system_name = "SRV01"
+else:
+    system_name = "Windows Server"
+
+print(f"{system_name} QE Validation Report")
 print("-------------------------")
 print(f"Report file:  {report_file}")
-print(f"Total tests:  {total_tests}")
+print(f"Total tests:  {len(results)}")
 print(f"Passed:       {len(passed_results)}")
 print(f"Failed:       {len(failed_results)}")
 
@@ -54,7 +65,6 @@ print("--------------")
 if failed_results:
     print("FAIL")
     sys.exit(1)
-else:
-    print("PASS")
-    sys.exit(0)
 
+print("PASS")
+sys.exit(0)
