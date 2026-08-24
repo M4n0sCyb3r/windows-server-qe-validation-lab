@@ -34,16 +34,24 @@ jobs:
       - name: Check Bash syntax
         run: |
           bash -n scripts/run-qe-validation.sh
+          bash -n scripts/run-srv01-validation.sh
           bash -n scripts/run-qe-negative-test.sh
           bash -n scripts/run-qe-missing-report-test.sh
           bash -n scripts/test-qe-harness.sh
           bash -n scripts/run-ci-checks.sh
 
-      - name: Check Ansible playbook syntax
+      - name: Check DC01 Ansible playbook syntax
         run: |
           ansible-playbook \
             -i localhost, \
             playbooks/dc01-validation-suite.yml \
+            --syntax-check
+
+      - name: Check SRV01 Ansible playbook syntax
+        run: |
+          ansible-playbook \
+            -i localhost, \
+            playbooks/srv01-validation-suite.yml \
             --syntax-check
 
       - name: Run QE harness self-tests
