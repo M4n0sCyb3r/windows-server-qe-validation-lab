@@ -15,13 +15,14 @@ echo
 echo "[2/4] Checking Bash syntax..."
 bash -n scripts/run-qe-validation.sh
 bash -n scripts/run-srv01-validation.sh
+bash -n scripts/run-infrastructure-validation.sh
+bash -n scripts/run-infrastructure-negative-test.sh
 bash -n scripts/run-qe-negative-test.sh
 bash -n scripts/run-qe-missing-report-test.sh
 bash -n scripts/test-qe-harness.sh
 bash -n scripts/run-ci-checks.sh
 echo "PASS: Bash syntax"
 echo
-
 echo "[3/4] Checking Ansible playbook syntax..."
 
 ansible-playbook \

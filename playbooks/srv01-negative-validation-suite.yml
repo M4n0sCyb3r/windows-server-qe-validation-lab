@@ -1,0 +1,29 @@
+---
+- name: SRV01 Windows Server QE Controlled Negative Suite
+  hosts: srv01
+  gather_facts: false
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled firewall negative validation
+      ansible.builtin.import_tasks: tasks/validate-firewall.yml
+      vars:
+        firewall_domain_enabled: false
+      ignore_errors: true
+
+    - name: Display collected negative QE results
+      ansible.builtin.debug:
+        var: qe_results
+
+    - name: Export negative QE results to JSON
+      ansible.builtin.copy:
+        content: "{{ qe_results | to_nice_json }}"
+        dest: "../reports/srv01-qe-results-negative.json"
+        mode: "0644"
+      delegate_to: localhost
+      run_once: true
+      changed_when: false
