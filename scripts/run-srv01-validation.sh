@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-echo "Running SRV01 QE validation workflow..."
+REPORT_FILE="reports/srv01-qe-results.json"
+
+echo "========================================"
+echo "SRV01 Windows Server QE Validation"
+echo "========================================"
 echo
 
-echo "[1/2] Running Ansible validation..."
+# Never allow evidence from an earlier run to be reused.
+rm -f "$REPORT_FILE"
+
+echo "[1/2] Running Ansible validation suite..."
+echo
+
 ansible-playbook \
   -i inventory/hosts.yml \
   playbooks/srv01-validation-suite.yml \
@@ -13,7 +22,15 @@ ansible-playbook \
 
 echo
 echo "[2/2] Running Python QE report..."
-python scripts/qe_report.py reports/srv01-qe-results.json
+echo
+
+if [[ ! -f "$REPORT_FILE" ]]; then
+    echo "ERROR: Expected report file was not created:"
+    echo "  $REPORT_FILE"
+    exit 2
+fi
+
+python scripts/qe_report.py "$REPORT_FILE"
 
 echo
 echo "SRV01 QE validation workflow completed successfully."

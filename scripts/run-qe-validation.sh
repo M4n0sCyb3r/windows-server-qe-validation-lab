@@ -4,6 +4,8 @@ set -euo pipefail
 
 REPORT_FILE="reports/dc01-qe-results.json"
 
+rm -f "$REPORT_FILE"
+
 echo "========================================"
 echo "DC01 Windows Server QE Validation"
 echo "========================================"
