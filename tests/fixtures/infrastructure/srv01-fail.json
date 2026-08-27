@@ -1,0 +1,18 @@
+[
+  {
+    "test": "SRV01 Sample Check 1",
+    "expected": true,
+    "actual": true,
+    "result": "PASS"
+  },
+  {
+    "test": "SRV01 Firewall",
+    "expected": {
+      "enabled": false
+    },
+    "actual": {
+      "enabled": true
+    },
+    "result": "FAIL"
+  }
+]
