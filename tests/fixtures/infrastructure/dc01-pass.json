@@ -1,0 +1,14 @@
+[
+  {
+    "test": "DC01 Sample Check 1",
+    "expected": true,
+    "actual": true,
+    "result": "PASS"
+  },
+  {
+    "test": "DC01 Sample Check 2",
+    "expected": "running",
+    "actual": "running",
+    "result": "PASS"
+  }
+]
