@@ -1,0 +1,25 @@
+---
+- name: SRV01 Controlled Identity Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    server_identity:
+      hostname: "SRV99"
+      domain: "corp.lab"
+      part_of_domain: true
+      domain_role: 3
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled identity negative validation
+      ansible.builtin.import_tasks: tasks/validate-identity.yml
+      ignore_errors: true
+
+    - name: Display collected negative identity results
+      ansible.builtin.debug:
+        var: qe_results

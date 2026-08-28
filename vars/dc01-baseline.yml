@@ -27,3 +27,9 @@ system_event_log:
   log_mode: "Circular"
 
 winrm_basic_auth_enabled: false
+
+server_identity:
+  hostname: "DC01"
+  domain: "corp.lab"
+  part_of_domain: true
+  domain_role: 5
