@@ -14,3 +14,9 @@ system_event_log:
   enabled: true
   maximum_size_bytes: 20971520
   log_mode: "Circular"
+
+server_identity:
+  hostname: "SRV01"
+  domain: "corp.lab"
+  part_of_domain: true
+  domain_role: 3

@@ -1,0 +1,135 @@
+---
+- name: Collect server identity and domain role
+  ansible.windows.win_powershell:
+    script: |
+      $system = Get-CimInstance Win32_ComputerSystem
+
+      [PSCustomObject]@{
+          Name         = $system.Name
+          Domain       = $system.Domain
+          PartOfDomain = $system.PartOfDomain
+          DomainRole   = [int]$system.DomainRole
+      }
+  register: identity_result
+  changed_when: false
+
+- name: Calculate identity validation comparisons
+  ansible.builtin.set_fact:
+    identity_hostname_match: >-
+      {{
+        identity_result.output[0].Name
+        == server_identity.hostname
+      }}
+    identity_domain_match: >-
+      {{
+        identity_result.output[0].Domain
+        == server_identity.domain
+      }}
+    identity_membership_match: >-
+      {{
+        (identity_result.output[0].PartOfDomain | bool)
+        == (server_identity.part_of_domain | bool)
+      }}
+    identity_role_match: >-
+      {{
+        (identity_result.output[0].DomainRole | int)
+        == (server_identity.domain_role | int)
+      }}
+  changed_when: false
+
+- name: Calculate overall identity validation result
+  ansible.builtin.set_fact:
+    identity_validation_passed: >-
+      {{
+        identity_hostname_match
+        and identity_domain_match
+        and identity_membership_match
+        and identity_role_match
+      }}
+  changed_when: false
+
+- name: Report server identity validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Server Identity and Domain Role"
+      expected:
+        hostname: "{{ server_identity.hostname }}"
+        domain: "{{ server_identity.domain }}"
+        part_of_domain: "{{ server_identity.part_of_domain }}"
+        domain_role: "{{ server_identity.domain_role }}"
+      actual:
+        hostname: "{{ identity_result.output[0].Name }}"
+        domain: "{{ identity_result.output[0].Domain }}"
+        part_of_domain: "{{ identity_result.output[0].PartOfDomain }}"
+        domain_role: "{{ identity_result.output[0].DomainRole }}"
+      result: "{{ 'PASS' if identity_validation_passed else 'FAIL' }}"
+
+- name: Add server identity result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results + [
+          {
+            'test': 'Server Identity and Domain Role',
+            'expected': {
+              'hostname': server_identity.hostname,
+              'domain': server_identity.domain,
+              'part_of_domain': server_identity.part_of_domain,
+              'domain_role': server_identity.domain_role
+            },
+            'actual': {
+              'hostname': identity_result.output[0].Name,
+              'domain': identity_result.output[0].Domain,
+              'part_of_domain': identity_result.output[0].PartOfDomain,
+              'domain_role': identity_result.output[0].DomainRole
+            },
+            'result': (
+              'PASS'
+              if identity_validation_passed
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  changed_when: false
+
+- name: Validate server hostname
+  ansible.builtin.assert:
+    that:
+      - identity_hostname_match
+    fail_msg: >-
+      FAIL: Hostname mismatch.
+      Expected {{ server_identity.hostname }},
+      actual {{ identity_result.output[0].Name }}
+    success_msg: "PASS: Hostname matches baseline"
+    quiet: true
+
+- name: Validate server domain
+  ansible.builtin.assert:
+    that:
+      - identity_domain_match
+    fail_msg: >-
+      FAIL: Domain mismatch.
+      Expected {{ server_identity.domain }},
+      actual {{ identity_result.output[0].Domain }}
+    success_msg: "PASS: Domain matches baseline"
+    quiet: true
+
+- name: Validate domain membership
+  ansible.builtin.assert:
+    that:
+      - identity_membership_match
+    fail_msg: "FAIL: Domain membership state does not match baseline"
+    success_msg: "PASS: Domain membership matches baseline"
+    quiet: true
+
+- name: Validate domain role
+  ansible.builtin.assert:
+    that:
+      - identity_role_match
+    fail_msg: >-
+      FAIL: Domain role mismatch.
+      Expected {{ server_identity.domain_role }},
+      actual {{ identity_result.output[0].DomainRole }}
+    success_msg: "PASS: Domain role matches baseline"
+    quiet: true

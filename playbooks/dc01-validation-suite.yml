@@ -14,6 +14,11 @@
       tags:
         - always
 
+    - name: Validate server identity and domain role
+      ansible.builtin.import_tasks: tasks/validate-identity.yml
+      tags:
+        - identity
+
     - name: Validate required services
       ansible.builtin.import_tasks: tasks/validate-services.yml
       tags:
@@ -58,6 +63,7 @@
       ansible.builtin.debug:
         msg:
           - "DC01 QE Validation Summary"
+          - "Expected identity: {{ server_identity }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"
