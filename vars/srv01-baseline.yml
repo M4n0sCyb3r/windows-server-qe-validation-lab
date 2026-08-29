@@ -58,3 +58,11 @@ event_log_health:
 patch_reboot_health:
   expected_cbs_reboot_pending: false
   expected_wu_reboot_required: false
+
+scheduled_task:
+  task_name: "Server Initial Configuration Task"
+  task_path: "\\Microsoft\\Windows\\"
+  expected_state: "Disabled"
+  expected_action_execute: "%windir%\\system32\\srvinitconfig.exe"
+  expected_action_arguments: "/disableconfigtask"
+  expected_trigger_enabled: true

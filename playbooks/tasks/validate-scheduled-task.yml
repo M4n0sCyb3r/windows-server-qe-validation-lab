@@ -1,0 +1,146 @@
+---
+- name: Collect scheduled task configuration
+  ansible.windows.win_powershell:
+    script: |
+      $taskName = '{{ scheduled_task.task_name }}'
+      $taskPath = '{{ scheduled_task.task_path }}'
+
+      $task = Get-ScheduledTask `
+          -TaskName $taskName `
+          -TaskPath $taskPath `
+          -ErrorAction SilentlyContinue
+
+      if ($null -eq $task) {
+          [PSCustomObject]@{
+              Exists = $false
+              TaskName = $taskName
+              TaskPath = $taskPath
+              State = $null
+              ActionExecute = $null
+              ActionArguments = $null
+              TriggerEnabled = $null
+              LastRunTime = $null
+              LastTaskResult = $null
+              NextRunTime = $null
+          }
+      }
+      else {
+          $info = Get-ScheduledTaskInfo `
+              -TaskName $task.TaskName `
+              -TaskPath $task.TaskPath
+
+          $action = $task.Actions | Select-Object -First 1
+          $trigger = $task.Triggers | Select-Object -First 1
+
+          [PSCustomObject]@{
+              Exists = $true
+              TaskName = $task.TaskName
+              TaskPath = $task.TaskPath
+              State = $task.State.ToString()
+              ActionExecute = $action.Execute
+              ActionArguments = $action.Arguments
+              TriggerEnabled = [bool]$trigger.Enabled
+              LastRunTime = if ($info.LastRunTime) {
+                  $info.LastRunTime.ToString("o")
+              } else {
+                  $null
+              }
+              LastTaskResult = $info.LastTaskResult
+              NextRunTime = if ($info.NextRunTime) {
+                  $info.NextRunTime.ToString("o")
+              } else {
+                  $null
+              }
+          }
+      }
+  register: scheduled_task_result
+  changed_when: false
+
+- name: Calculate scheduled task validation
+  ansible.builtin.set_fact:
+    scheduled_task_validation_passed: >-
+      {{
+        (scheduled_task_result.output[0].Exists | bool)
+        and
+        (scheduled_task_result.output[0].State == scheduled_task.expected_state)
+        and
+        (scheduled_task_result.output[0].ActionExecute == scheduled_task.expected_action_execute)
+        and
+        (scheduled_task_result.output[0].ActionArguments == scheduled_task.expected_action_arguments)
+        and
+        (
+          (scheduled_task_result.output[0].TriggerEnabled | bool)
+          ==
+          (scheduled_task.expected_trigger_enabled | bool)
+        )
+      }}
+  changed_when: false
+
+- name: Report scheduled task validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Scheduled Task Configuration"
+      expected:
+        task_name: "{{ scheduled_task.task_name }}"
+        task_path: "{{ scheduled_task.task_path }}"
+        state: "{{ scheduled_task.expected_state }}"
+        action_execute: "{{ scheduled_task.expected_action_execute }}"
+        action_arguments: "{{ scheduled_task.expected_action_arguments }}"
+        trigger_enabled: "{{ scheduled_task.expected_trigger_enabled }}"
+      actual:
+        exists: "{{ scheduled_task_result.output[0].Exists }}"
+        task_name: "{{ scheduled_task_result.output[0].TaskName }}"
+        task_path: "{{ scheduled_task_result.output[0].TaskPath }}"
+        state: "{{ scheduled_task_result.output[0].State }}"
+        action_execute: "{{ scheduled_task_result.output[0].ActionExecute }}"
+        action_arguments: "{{ scheduled_task_result.output[0].ActionArguments }}"
+        trigger_enabled: "{{ scheduled_task_result.output[0].TriggerEnabled }}"
+        last_run_time: "{{ scheduled_task_result.output[0].LastRunTime }}"
+        last_task_result: "{{ scheduled_task_result.output[0].LastTaskResult }}"
+        next_run_time: "{{ scheduled_task_result.output[0].NextRunTime }}"
+      result: "{{ 'PASS' if scheduled_task_validation_passed else 'FAIL' }}"
+
+- name: Add scheduled task result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results + [
+          {
+            'test': 'Scheduled Task Configuration',
+            'expected': {
+              'task_name': scheduled_task.task_name,
+              'task_path': scheduled_task.task_path,
+              'state': scheduled_task.expected_state,
+              'action_execute': scheduled_task.expected_action_execute,
+              'action_arguments': scheduled_task.expected_action_arguments,
+              'trigger_enabled': scheduled_task.expected_trigger_enabled
+            },
+            'actual': {
+              'exists': scheduled_task_result.output[0].Exists,
+              'task_name': scheduled_task_result.output[0].TaskName,
+              'task_path': scheduled_task_result.output[0].TaskPath,
+              'state': scheduled_task_result.output[0].State,
+              'action_execute': scheduled_task_result.output[0].ActionExecute,
+              'action_arguments': scheduled_task_result.output[0].ActionArguments,
+              'trigger_enabled': scheduled_task_result.output[0].TriggerEnabled,
+              'last_run_time': scheduled_task_result.output[0].LastRunTime,
+              'last_task_result': scheduled_task_result.output[0].LastTaskResult,
+              'next_run_time': scheduled_task_result.output[0].NextRunTime
+            },
+            'result': (
+              'PASS'
+              if scheduled_task_validation_passed
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  changed_when: false
+
+- name: Assert scheduled task matches baseline
+  ansible.builtin.assert:
+    that:
+      - scheduled_task_validation_passed
+    fail_msg: "FAIL: Scheduled task configuration does not match baseline"
+    success_msg: "PASS: Scheduled task configuration matches baseline"
+    quiet: true
