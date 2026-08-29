@@ -19,6 +19,11 @@
       tags:
         - identity
 
+    - name: Validate Windows Time synchronization
+      ansible.builtin.import_tasks: tasks/validate-time.yml
+      tags:
+        - time
+
     - name: Validate required services
       ansible.builtin.import_tasks: tasks/validate-services.yml
       tags:
@@ -49,6 +54,7 @@
         msg:
           - "SRV01 QE Validation Summary"
           - "Expected identity: {{ server_identity }}"
+          - "Expected Windows Time: {{ windows_time }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"
