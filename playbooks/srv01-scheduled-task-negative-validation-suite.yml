@@ -1,0 +1,27 @@
+---
+- name: SRV01 Controlled Scheduled Task Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    scheduled_task:
+      task_name: "Server Initial Configuration Task"
+      task_path: "\\Microsoft\\Windows\\"
+      expected_state: "Ready"
+      expected_action_execute: "%windir%\\system32\\srvinitconfig.exe"
+      expected_action_arguments: "/disableconfigtask"
+      expected_trigger_enabled: true
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled scheduled task negative validation
+      ansible.builtin.import_tasks: tasks/validate-scheduled-task.yml
+      ignore_errors: true
+
+    - name: Display collected negative scheduled task results
+      ansible.builtin.debug:
+        var: qe_results

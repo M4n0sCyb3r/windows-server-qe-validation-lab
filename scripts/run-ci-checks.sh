@@ -83,6 +83,12 @@ ansible-playbook \
   --syntax-check \
   --ask-vault-password
 
+ansible-playbook \
+  -i inventory/hosts.yml \
+  playbooks/srv01-scheduled-task-negative-validation-suite.yml \
+  --syntax-check \
+  --ask-vault-password
+
 echo "PASS: Ansible syntax"
 echo
 

@@ -69,6 +69,11 @@
       tags:
         - patchhealth
 
+    - name: Validate scheduled task configuration
+      ansible.builtin.import_tasks: tasks/validate-scheduled-task.yml
+      tags:
+        - scheduledtask
+
     - name: Display SRV01 validation summary
       ansible.builtin.debug:
         msg:
@@ -79,6 +84,7 @@
           - "Expected Defender health: {{ defender_health }}"
           - "Expected recent event health: {{ event_log_health }}"
           - "Expected patch/reboot health: {{ patch_reboot_health }}"
+          - "Expected scheduled task: {{ scheduled_task }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"
