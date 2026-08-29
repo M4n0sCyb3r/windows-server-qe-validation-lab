@@ -1,0 +1,88 @@
+---
+- name: Collect recent critical and error events
+  ansible.windows.win_powershell:
+    script: |
+      $startTime = (Get-Date).AddMinutes(-{{ event_log_health.lookback_minutes }})
+
+      $events = Get-WinEvent -FilterHashtable @{
+          LogName   = "{{ event_log_health.log_name }}"
+          Level     = @({{ event_log_health.levels | join(',') }})
+          StartTime = $startTime
+      } -ErrorAction SilentlyContinue
+
+      $normalized = @(
+          $events | ForEach-Object {
+              [PSCustomObject]@{
+                  TimeCreated = $_.TimeCreated.ToString("o")
+                  Id = [int]$_.Id
+                  Level = $_.LevelDisplayName
+                  Provider = $_.ProviderName
+                  Message = $_.Message
+              }
+          }
+      )
+
+      [PSCustomObject]@{
+          Count = [int]$normalized.Count
+          Events = $normalized
+      }
+  register: event_health_result
+  changed_when: false
+
+- name: Calculate event log health result
+  ansible.builtin.set_fact:
+    event_health_passed: >-
+      {{
+        (event_health_result.output[0].Count | int)
+        <= (event_log_health.max_allowed_events | int)
+      }}
+  changed_when: false
+
+- name: Report event log health validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Recent System Event Health"
+      expected:
+        log_name: "{{ event_log_health.log_name }}"
+        lookback_minutes: "{{ event_log_health.lookback_minutes }}"
+        levels: "{{ event_log_health.levels }}"
+        max_allowed_events: "{{ event_log_health.max_allowed_events }}"
+      actual:
+        event_count: "{{ event_health_result.output[0].Count }}"
+        events: "{{ event_health_result.output[0].Events }}"
+      result: "{{ 'PASS' if event_health_passed else 'FAIL' }}"
+
+- name: Add event log health result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results + [
+          {
+            'test': 'Recent System Event Health',
+            'expected': {
+              'log_name': event_log_health.log_name,
+              'lookback_minutes': event_log_health.lookback_minutes,
+              'levels': event_log_health.levels,
+              'max_allowed_events': event_log_health.max_allowed_events
+            },
+            'actual': {
+              'event_count': event_health_result.output[0].Count,
+              'events': event_health_result.output[0].Events
+            },
+            'result': (
+              'PASS'
+              if event_health_passed
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  changed_when: false
+
+- name: Assert recent event log health matches baseline
+  ansible.builtin.assert:
+    that:
+      - event_health_passed
+    fail_msg: "FAIL: Recent System log contains more critical/error events than allowed"
+    success_msg: "PASS: Recent System event health matches baseline"
+    quiet: true

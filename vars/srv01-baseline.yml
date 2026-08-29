@@ -46,3 +46,11 @@ defender_health:
   disable_realtime_monitoring: false
   disable_behavior_monitoring: false
   disable_ioav_protection: false
+
+event_log_health:
+  log_name: "System"
+  lookback_minutes: 60
+  levels:
+    - 1
+    - 2
+  max_allowed_events: 0
