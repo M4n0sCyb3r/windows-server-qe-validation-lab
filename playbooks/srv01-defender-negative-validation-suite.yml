@@ -1,0 +1,33 @@
+---
+- name: SRV01 Controlled Microsoft Defender Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    defender_health:
+      am_service_enabled: true
+      antivirus_enabled: true
+      antispyware_enabled: true
+
+      # Intentionally incorrect expectation for negative testing.
+      realtime_protection_enabled: false
+
+      behavior_monitor_enabled: true
+      ioav_protection_enabled: true
+      disable_realtime_monitoring: false
+      disable_behavior_monitoring: false
+      disable_ioav_protection: false
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled Microsoft Defender negative validation
+      ansible.builtin.import_tasks: tasks/validate-defender.yml
+      ignore_errors: true
+
+    - name: Display collected negative Microsoft Defender results
+      ansible.builtin.debug:
+        var: qe_results
