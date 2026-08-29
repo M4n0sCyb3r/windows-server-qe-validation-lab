@@ -20,3 +20,10 @@ server_identity:
   domain: "corp.lab"
   part_of_domain: true
   domain_role: 3
+
+windows_time:
+  service_name: "W32Time"
+  service_state: "running"
+  service_start_mode: "auto"
+  expected_state_machine: 2
+  expected_last_sync_error: 0

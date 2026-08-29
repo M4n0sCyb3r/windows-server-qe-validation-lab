@@ -1,0 +1,111 @@
+---
+- name: Collect Windows Time service state
+  ansible.windows.win_service:
+    name: "{{ windows_time.service_name }}"
+  register: w32time_service
+  changed_when: false
+
+- name: Collect Windows Time synchronization status
+  ansible.windows.win_powershell:
+    script: |
+      $status = w32tm /query /status /verbose
+
+      $source = ($status | Select-String '^Source:\s+(.+)$').Matches.Groups[1].Value
+      $stateMachine = [int](($status | Select-String '^State Machine:\s+(\d+)').Matches.Groups[1].Value)
+      $lastSyncError = [int](($status | Select-String '^Last Sync Error:\s+(\d+)').Matches.Groups[1].Value)
+
+      [PSCustomObject]@{
+          Source        = $source
+          StateMachine  = $stateMachine
+          LastSyncError = $lastSyncError
+      }
+  register: time_status
+  changed_when: false
+
+- name: Calculate Windows Time comparisons
+  ansible.builtin.set_fact:
+    time_service_exists: "{{ w32time_service.exists | bool }}"
+    time_service_running: "{{ w32time_service.state == windows_time.service_state }}"
+    time_service_auto: "{{ w32time_service.start_mode == windows_time.service_start_mode }}"
+    time_state_machine_match: >-
+      {{
+        (time_status.output[0].StateMachine | int)
+        == (windows_time.expected_state_machine | int)
+      }}
+    time_last_sync_error_match: >-
+      {{
+        (time_status.output[0].LastSyncError | int)
+        == (windows_time.expected_last_sync_error | int)
+      }}
+  changed_when: false
+
+- name: Calculate overall Windows Time result
+  ansible.builtin.set_fact:
+    time_validation_passed: >-
+      {{
+        time_service_exists
+        and time_service_running
+        and time_service_auto
+        and time_state_machine_match
+        and time_last_sync_error_match
+      }}
+  changed_when: false
+
+- name: Report Windows Time validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Windows Time Synchronization"
+      expected:
+        service_exists: true
+        service_state: "{{ windows_time.service_state }}"
+        service_start_mode: "{{ windows_time.service_start_mode }}"
+        state_machine: "{{ windows_time.expected_state_machine }}"
+        last_sync_error: "{{ windows_time.expected_last_sync_error }}"
+      actual:
+        service_exists: "{{ w32time_service.exists }}"
+        service_state: "{{ w32time_service.state }}"
+        service_start_mode: "{{ w32time_service.start_mode }}"
+        state_machine: "{{ time_status.output[0].StateMachine }}"
+        last_sync_error: "{{ time_status.output[0].LastSyncError }}"
+        source: "{{ time_status.output[0].Source }}"
+      result: "{{ 'PASS' if time_validation_passed else 'FAIL' }}"
+
+- name: Add Windows Time result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results + [
+          {
+            'test': 'Windows Time Synchronization',
+            'expected': {
+              'service_exists': true,
+              'service_state': windows_time.service_state,
+              'service_start_mode': windows_time.service_start_mode,
+              'state_machine': windows_time.expected_state_machine,
+              'last_sync_error': windows_time.expected_last_sync_error
+            },
+            'actual': {
+              'service_exists': w32time_service.exists,
+              'service_state': w32time_service.state,
+              'service_start_mode': w32time_service.start_mode,
+              'state_machine': time_status.output[0].StateMachine,
+              'last_sync_error': time_status.output[0].LastSyncError,
+              'source': time_status.output[0].Source
+            },
+            'result': (
+              'PASS'
+              if time_validation_passed
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  changed_when: false
+
+- name: Assert Windows Time validation passed
+  ansible.builtin.assert:
+    that:
+      - time_validation_passed
+    fail_msg: "FAIL: Windows Time synchronization does not match baseline"
+    success_msg: "PASS: Windows Time synchronization matches baseline"
+    quiet: true

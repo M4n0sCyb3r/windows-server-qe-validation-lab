@@ -1,0 +1,26 @@
+---
+- name: SRV01 Controlled Windows Time Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    windows_time:
+      service_name: "W32Time"
+      service_state: "running"
+      service_start_mode: "auto"
+      expected_state_machine: 99
+      expected_last_sync_error: 0
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled Windows Time negative validation
+      ansible.builtin.import_tasks: tasks/validate-time.yml
+      ignore_errors: true
+
+    - name: Display collected negative Windows Time results
+      ansible.builtin.debug:
+        var: qe_results
