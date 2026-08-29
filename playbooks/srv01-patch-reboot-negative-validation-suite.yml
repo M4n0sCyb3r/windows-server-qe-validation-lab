@@ -1,0 +1,23 @@
+---
+- name: SRV01 Controlled Patch and Reboot Health Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    patch_reboot_health:
+      expected_cbs_reboot_pending: true
+      expected_wu_reboot_required: false
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled patch and reboot health negative validation
+      ansible.builtin.import_tasks: tasks/validate-patch-reboot-health.yml
+      ignore_errors: true
+
+    - name: Display collected negative patch and reboot health results
+      ansible.builtin.debug:
+        var: qe_results

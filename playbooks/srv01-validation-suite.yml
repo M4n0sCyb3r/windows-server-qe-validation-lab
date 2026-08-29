@@ -64,6 +64,11 @@
       tags:
         - eventhealth
 
+    - name: Validate patch and reboot health
+      ansible.builtin.import_tasks: tasks/validate-patch-reboot-health.yml
+      tags:
+        - patchhealth
+
     - name: Display SRV01 validation summary
       ansible.builtin.debug:
         msg:
@@ -73,6 +78,7 @@
           - "Expected network configuration: {{ network_config }}"
           - "Expected Defender health: {{ defender_health }}"
           - "Expected recent event health: {{ event_log_health }}"
+          - "Expected patch/reboot health: {{ patch_reboot_health }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"

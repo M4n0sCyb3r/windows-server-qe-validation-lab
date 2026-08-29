@@ -56,3 +56,7 @@ event_log_health:
     - 1
     - 2
   max_allowed_events: 0
+
+patch_reboot_health:
+  expected_cbs_reboot_pending: false
+  expected_wu_reboot_required: false
