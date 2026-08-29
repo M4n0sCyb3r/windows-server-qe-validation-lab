@@ -35,3 +35,14 @@ network_config:
   address_state: "Preferred"
   dns_servers:
     - "10.10.10.10"
+
+defender_health:
+  am_service_enabled: true
+  antivirus_enabled: true
+  antispyware_enabled: true
+  realtime_protection_enabled: true
+  behavior_monitor_enabled: true
+  ioav_protection_enabled: true
+  disable_realtime_monitoring: false
+  disable_behavior_monitoring: false
+  disable_ioav_protection: false

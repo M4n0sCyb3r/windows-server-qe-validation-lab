@@ -1,0 +1,158 @@
+---
+- name: Collect Microsoft Defender health and preferences
+  ansible.windows.win_powershell:
+    script: |
+      $status = Get-MpComputerStatus
+      $pref = Get-MpPreference
+
+      [PSCustomObject]@{
+          AMServiceEnabled             = [bool]$status.AMServiceEnabled
+          AntivirusEnabled             = [bool]$status.AntivirusEnabled
+          AntispywareEnabled           = [bool]$status.AntispywareEnabled
+          RealTimeProtectionEnabled    = [bool]$status.RealTimeProtectionEnabled
+          BehaviorMonitorEnabled       = [bool]$status.BehaviorMonitorEnabled
+          IoavProtectionEnabled        = [bool]$status.IoavProtectionEnabled
+          DisableRealtimeMonitoring    = [bool]$pref.DisableRealtimeMonitoring
+          DisableBehaviorMonitoring    = [bool]$pref.DisableBehaviorMonitoring
+          DisableIOAVProtection        = [bool]$pref.DisableIOAVProtection
+      }
+  register: defender_result
+  changed_when: false
+
+- name: Calculate Microsoft Defender comparisons
+  ansible.builtin.set_fact:
+    defender_am_service_match: >-
+      {{
+        (defender_result.output[0].AMServiceEnabled | bool)
+        == (defender_health.am_service_enabled | bool)
+      }}
+    defender_antivirus_match: >-
+      {{
+        (defender_result.output[0].AntivirusEnabled | bool)
+        == (defender_health.antivirus_enabled | bool)
+      }}
+    defender_antispyware_match: >-
+      {{
+        (defender_result.output[0].AntispywareEnabled | bool)
+        == (defender_health.antispyware_enabled | bool)
+      }}
+    defender_realtime_match: >-
+      {{
+        (defender_result.output[0].RealTimeProtectionEnabled | bool)
+        == (defender_health.realtime_protection_enabled | bool)
+      }}
+    defender_behavior_match: >-
+      {{
+        (defender_result.output[0].BehaviorMonitorEnabled | bool)
+        == (defender_health.behavior_monitor_enabled | bool)
+      }}
+    defender_ioav_match: >-
+      {{
+        (defender_result.output[0].IoavProtectionEnabled | bool)
+        == (defender_health.ioav_protection_enabled | bool)
+      }}
+    defender_disable_realtime_match: >-
+      {{
+        (defender_result.output[0].DisableRealtimeMonitoring | bool)
+        == (defender_health.disable_realtime_monitoring | bool)
+      }}
+    defender_disable_behavior_match: >-
+      {{
+        (defender_result.output[0].DisableBehaviorMonitoring | bool)
+        == (defender_health.disable_behavior_monitoring | bool)
+      }}
+    defender_disable_ioav_match: >-
+      {{
+        (defender_result.output[0].DisableIOAVProtection | bool)
+        == (defender_health.disable_ioav_protection | bool)
+      }}
+  changed_when: false
+
+- name: Calculate overall Microsoft Defender result
+  ansible.builtin.set_fact:
+    defender_validation_passed: >-
+      {{
+        defender_am_service_match
+        and defender_antivirus_match
+        and defender_antispyware_match
+        and defender_realtime_match
+        and defender_behavior_match
+        and defender_ioav_match
+        and defender_disable_realtime_match
+        and defender_disable_behavior_match
+        and defender_disable_ioav_match
+      }}
+  changed_when: false
+
+- name: Report Microsoft Defender validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Microsoft Defender Health"
+      expected:
+        am_service_enabled: "{{ defender_health.am_service_enabled }}"
+        antivirus_enabled: "{{ defender_health.antivirus_enabled }}"
+        antispyware_enabled: "{{ defender_health.antispyware_enabled }}"
+        realtime_protection_enabled: "{{ defender_health.realtime_protection_enabled }}"
+        behavior_monitor_enabled: "{{ defender_health.behavior_monitor_enabled }}"
+        ioav_protection_enabled: "{{ defender_health.ioav_protection_enabled }}"
+        disable_realtime_monitoring: "{{ defender_health.disable_realtime_monitoring }}"
+        disable_behavior_monitoring: "{{ defender_health.disable_behavior_monitoring }}"
+        disable_ioav_protection: "{{ defender_health.disable_ioav_protection }}"
+      actual:
+        am_service_enabled: "{{ defender_result.output[0].AMServiceEnabled }}"
+        antivirus_enabled: "{{ defender_result.output[0].AntivirusEnabled }}"
+        antispyware_enabled: "{{ defender_result.output[0].AntispywareEnabled }}"
+        realtime_protection_enabled: "{{ defender_result.output[0].RealTimeProtectionEnabled }}"
+        behavior_monitor_enabled: "{{ defender_result.output[0].BehaviorMonitorEnabled }}"
+        ioav_protection_enabled: "{{ defender_result.output[0].IoavProtectionEnabled }}"
+        disable_realtime_monitoring: "{{ defender_result.output[0].DisableRealtimeMonitoring }}"
+        disable_behavior_monitoring: "{{ defender_result.output[0].DisableBehaviorMonitoring }}"
+        disable_ioav_protection: "{{ defender_result.output[0].DisableIOAVProtection }}"
+      result: "{{ 'PASS' if defender_validation_passed else 'FAIL' }}"
+
+- name: Add Microsoft Defender result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results + [
+          {
+            'test': 'Microsoft Defender Health',
+            'expected': {
+              'am_service_enabled': defender_health.am_service_enabled,
+              'antivirus_enabled': defender_health.antivirus_enabled,
+              'antispyware_enabled': defender_health.antispyware_enabled,
+              'realtime_protection_enabled': defender_health.realtime_protection_enabled,
+              'behavior_monitor_enabled': defender_health.behavior_monitor_enabled,
+              'ioav_protection_enabled': defender_health.ioav_protection_enabled,
+              'disable_realtime_monitoring': defender_health.disable_realtime_monitoring,
+              'disable_behavior_monitoring': defender_health.disable_behavior_monitoring,
+              'disable_ioav_protection': defender_health.disable_ioav_protection
+            },
+            'actual': {
+              'am_service_enabled': defender_result.output[0].AMServiceEnabled,
+              'antivirus_enabled': defender_result.output[0].AntivirusEnabled,
+              'antispyware_enabled': defender_result.output[0].AntispywareEnabled,
+              'realtime_protection_enabled': defender_result.output[0].RealTimeProtectionEnabled,
+              'behavior_monitor_enabled': defender_result.output[0].BehaviorMonitorEnabled,
+              'ioav_protection_enabled': defender_result.output[0].IoavProtectionEnabled,
+              'disable_realtime_monitoring': defender_result.output[0].DisableRealtimeMonitoring,
+              'disable_behavior_monitoring': defender_result.output[0].DisableBehaviorMonitoring,
+              'disable_ioav_protection': defender_result.output[0].DisableIOAVProtection
+            },
+            'result': (
+              'PASS'
+              if defender_validation_passed
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  changed_when: false
+
+- name: Assert Microsoft Defender health matches baseline
+  ansible.builtin.assert:
+    that:
+      - defender_validation_passed
+    fail_msg: "FAIL: Microsoft Defender health does not match baseline"
+    success_msg: "PASS: Microsoft Defender health matches baseline"
+    quiet: true
