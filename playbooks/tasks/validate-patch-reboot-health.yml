@@ -1,0 +1,130 @@
+---
+- name: Collect patch and reboot health
+  ansible.windows.win_powershell:
+    script: |
+      $computerInfo = Get-ComputerInfo
+
+      $hotfixes = @(
+          Get-HotFix |
+          Sort-Object InstalledOn -Descending |
+          Select-Object -First 10 |
+          ForEach-Object {
+              [PSCustomObject]@{
+                  HotFixID = $_.HotFixID
+                  Description = $_.Description
+                  InstalledOn = if ($_.InstalledOn) {
+                      $_.InstalledOn.ToString("yyyy-MM-dd")
+                  } else {
+                      $null
+                  }
+              }
+          }
+      )
+
+      $cbsRebootPending = Test-Path `
+          'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending'
+
+      $wuRebootRequired = Test-Path `
+          'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
+
+      $pendingFileRenameOperations = @(
+          (Get-ItemProperty `
+              'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' `
+              -Name PendingFileRenameOperations `
+              -ErrorAction SilentlyContinue).PendingFileRenameOperations
+      )
+
+      [PSCustomObject]@{
+          WindowsProductName = $computerInfo.WindowsProductName
+          WindowsVersion = $computerInfo.WindowsVersion
+          OsBuildNumber = $computerInfo.OsBuildNumber
+          HotFixes = $hotfixes
+          CBSRebootPending = [bool]$cbsRebootPending
+          WURebootRequired = [bool]$wuRebootRequired
+          PendingFileRename = [bool]($pendingFileRenameOperations.Count -gt 0)
+          PendingFileRenameOperations = $pendingFileRenameOperations
+      }
+  register: patch_reboot_result
+  changed_when: false
+
+- name: Calculate patch and reboot health comparisons
+  ansible.builtin.set_fact:
+    patch_cbs_match: >-
+      {{
+        (patch_reboot_result.output[0].CBSRebootPending | bool)
+        ==
+        (patch_reboot_health.expected_cbs_reboot_pending | bool)
+      }}
+    patch_wu_match: >-
+      {{
+        (patch_reboot_result.output[0].WURebootRequired | bool)
+        ==
+        (patch_reboot_health.expected_wu_reboot_required | bool)
+      }}
+  changed_when: false
+
+- name: Calculate overall patch and reboot health result
+  ansible.builtin.set_fact:
+    patch_reboot_validation_passed: >-
+      {{
+        patch_cbs_match
+        and patch_wu_match
+      }}
+  changed_when: false
+
+- name: Report patch and reboot health validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Patch and Reboot Health"
+      expected:
+        cbs_reboot_pending: "{{ patch_reboot_health.expected_cbs_reboot_pending }}"
+        wu_reboot_required: "{{ patch_reboot_health.expected_wu_reboot_required }}"
+      actual:
+        windows_product_name: "{{ patch_reboot_result.output[0].WindowsProductName }}"
+        windows_version: "{{ patch_reboot_result.output[0].WindowsVersion }}"
+        os_build_number: "{{ patch_reboot_result.output[0].OsBuildNumber }}"
+        cbs_reboot_pending: "{{ patch_reboot_result.output[0].CBSRebootPending }}"
+        wu_reboot_required: "{{ patch_reboot_result.output[0].WURebootRequired }}"
+        pending_file_rename: "{{ patch_reboot_result.output[0].PendingFileRename }}"
+        pending_file_rename_operations: "{{ patch_reboot_result.output[0].PendingFileRenameOperations }}"
+        hotfixes: "{{ patch_reboot_result.output[0].HotFixes }}"
+      result: "{{ 'PASS' if patch_reboot_validation_passed else 'FAIL' }}"
+
+- name: Add patch and reboot health result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results + [
+          {
+            'test': 'Patch and Reboot Health',
+            'expected': {
+              'cbs_reboot_pending': patch_reboot_health.expected_cbs_reboot_pending,
+              'wu_reboot_required': patch_reboot_health.expected_wu_reboot_required
+            },
+            'actual': {
+              'windows_product_name': patch_reboot_result.output[0].WindowsProductName,
+              'windows_version': patch_reboot_result.output[0].WindowsVersion,
+              'os_build_number': patch_reboot_result.output[0].OsBuildNumber,
+              'cbs_reboot_pending': patch_reboot_result.output[0].CBSRebootPending,
+              'wu_reboot_required': patch_reboot_result.output[0].WURebootRequired,
+              'pending_file_rename': patch_reboot_result.output[0].PendingFileRename,
+              'pending_file_rename_operations': patch_reboot_result.output[0].PendingFileRenameOperations,
+              'hotfixes': patch_reboot_result.output[0].HotFixes
+            },
+            'result': (
+              'PASS'
+              if patch_reboot_validation_passed
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  changed_when: false
+
+- name: Assert patch and reboot health matches baseline
+  ansible.builtin.assert:
+    that:
+      - patch_reboot_validation_passed
+    fail_msg: "FAIL: Patch/reboot health does not match baseline"
+    success_msg: "PASS: Patch/reboot health matches baseline"
+    quiet: true

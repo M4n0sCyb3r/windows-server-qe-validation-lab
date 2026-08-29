@@ -64,6 +64,11 @@
       tags:
         - eventhealth
 
+    - name: Validate patch and reboot health
+      ansible.builtin.import_tasks: tasks/validate-patch-reboot-health.yml
+      tags:
+        - patchhealth
+
     - name: Validate WinRM authentication configuration
       ansible.builtin.import_tasks: tasks/validate-winrm-auth.yml
       tags:
@@ -82,6 +87,7 @@
           - "Expected Windows Time: {{ windows_time }}"
           - "Expected network configuration: {{ network_config }}"
           - "Expected recent event health: {{ event_log_health }}"
+          - "Expected patch/reboot health: {{ patch_reboot_health }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"
