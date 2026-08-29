@@ -24,6 +24,11 @@
       tags:
         - time
 
+    - name: Validate network configuration
+      ansible.builtin.import_tasks: tasks/validate-network.yml
+      tags:
+        - network
+
     - name: Validate required services
       ansible.builtin.import_tasks: tasks/validate-services.yml
       tags:
@@ -70,6 +75,7 @@
           - "DC01 QE Validation Summary"
           - "Expected identity: {{ server_identity }}"
           - "Expected Windows Time: {{ windows_time }}"
+          - "Expected network configuration: {{ network_config }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"
@@ -88,4 +94,3 @@
       delegate_to: localhost
       run_once: true
       changed_when: false
-

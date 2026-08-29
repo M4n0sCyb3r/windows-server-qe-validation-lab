@@ -1,0 +1,125 @@
+---
+- name: Collect IPv4 network configuration
+  ansible.windows.win_powershell:
+    script: |
+      $interface = "{{ network_config.interface_alias }}"
+
+      $ip = Get-NetIPAddress `
+          -InterfaceAlias $interface `
+          -AddressFamily IPv4 |
+          Where-Object {
+              $_.IPAddress -ne "127.0.0.1"
+          } |
+          Select-Object -First 1
+
+      $dns = Get-DnsClientServerAddress `
+          -InterfaceAlias $interface `
+          -AddressFamily IPv4
+
+      [PSCustomObject]@{
+          InterfaceAlias = $interface
+          IPAddress       = $ip.IPAddress
+          PrefixLength    = [int]$ip.PrefixLength
+          AddressState    = $ip.AddressState.ToString()
+          DNSServers      = @($dns.ServerAddresses)
+      }
+  register: network_result
+  changed_when: false
+
+- name: Calculate network configuration comparisons
+  ansible.builtin.set_fact:
+    network_interface_match: >-
+      {{
+        network_result.output[0].InterfaceAlias
+        == network_config.interface_alias
+      }}
+    network_ipv4_match: >-
+      {{
+        network_result.output[0].IPAddress
+        == network_config.ipv4_address
+      }}
+    network_prefix_match: >-
+      {{
+        (network_result.output[0].PrefixLength | int)
+        == (network_config.prefix_length | int)
+      }}
+    network_state_match: >-
+      {{
+        network_result.output[0].AddressState
+        == network_config.address_state
+      }}
+    network_dns_match: >-
+      {{
+        network_result.output[0].DNSServers
+        == network_config.dns_servers
+      }}
+  changed_when: false
+
+- name: Calculate overall network configuration result
+  ansible.builtin.set_fact:
+    network_validation_passed: >-
+      {{
+        network_interface_match
+        and network_ipv4_match
+        and network_prefix_match
+        and network_state_match
+        and network_dns_match
+      }}
+  changed_when: false
+
+- name: Report network configuration validation result
+  ansible.builtin.debug:
+    msg:
+      test: "Network Configuration"
+      expected:
+        interface_alias: "{{ network_config.interface_alias }}"
+        ipv4_address: "{{ network_config.ipv4_address }}"
+        prefix_length: "{{ network_config.prefix_length }}"
+        address_state: "{{ network_config.address_state }}"
+        dns_servers: "{{ network_config.dns_servers }}"
+      actual:
+        interface_alias: "{{ network_result.output[0].InterfaceAlias }}"
+        ipv4_address: "{{ network_result.output[0].IPAddress }}"
+        prefix_length: "{{ network_result.output[0].PrefixLength }}"
+        address_state: "{{ network_result.output[0].AddressState }}"
+        dns_servers: "{{ network_result.output[0].DNSServers }}"
+      result: "{{ 'PASS' if network_validation_passed else 'FAIL' }}"
+
+- name: Add network configuration result to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results + [
+          {
+            'test': 'Network Configuration',
+            'expected': {
+              'interface_alias': network_config.interface_alias,
+              'ipv4_address': network_config.ipv4_address,
+              'prefix_length': network_config.prefix_length,
+              'address_state': network_config.address_state,
+              'dns_servers': network_config.dns_servers
+            },
+            'actual': {
+              'interface_alias': network_result.output[0].InterfaceAlias,
+              'ipv4_address': network_result.output[0].IPAddress,
+              'prefix_length': network_result.output[0].PrefixLength,
+              'address_state': network_result.output[0].AddressState,
+              'dns_servers': network_result.output[0].DNSServers
+            },
+            'result': (
+              'PASS'
+              if network_validation_passed
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  changed_when: false
+
+- name: Assert network configuration matches baseline
+  ansible.builtin.assert:
+    that:
+      - network_validation_passed
+    fail_msg: "FAIL: Network configuration does not match baseline"
+    success_msg: "PASS: Network configuration matches baseline"
+    quiet: true
