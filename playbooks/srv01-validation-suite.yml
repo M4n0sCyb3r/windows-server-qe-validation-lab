@@ -59,6 +59,11 @@
       tags:
         - eventlog
 
+    - name: Validate recent System event health
+      ansible.builtin.import_tasks: tasks/validate-event-health.yml
+      tags:
+        - eventhealth
+
     - name: Display SRV01 validation summary
       ansible.builtin.debug:
         msg:
@@ -67,6 +72,7 @@
           - "Expected Windows Time: {{ windows_time }}"
           - "Expected network configuration: {{ network_config }}"
           - "Expected Defender health: {{ defender_health }}"
+          - "Expected recent event health: {{ event_log_health }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"

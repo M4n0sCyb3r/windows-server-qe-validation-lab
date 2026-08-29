@@ -1,0 +1,27 @@
+---
+- name: SRV01 Controlled Event Health Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    event_log_health:
+      log_name: "System"
+      lookback_minutes: 1440
+      levels:
+        - 1
+        - 2
+      max_allowed_events: 0
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled event health negative validation
+      ansible.builtin.import_tasks: tasks/validate-event-health.yml
+      ignore_errors: true
+
+    - name: Display collected negative event health results
+      ansible.builtin.debug:
+        var: qe_results

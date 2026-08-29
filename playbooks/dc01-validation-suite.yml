@@ -59,6 +59,11 @@
       tags:
         - eventlog
 
+    - name: Validate recent System event health
+      ansible.builtin.import_tasks: tasks/validate-event-health.yml
+      tags:
+        - eventhealth
+
     - name: Validate WinRM authentication configuration
       ansible.builtin.import_tasks: tasks/validate-winrm-auth.yml
       tags:
@@ -76,6 +81,7 @@
           - "Expected identity: {{ server_identity }}"
           - "Expected Windows Time: {{ windows_time }}"
           - "Expected network configuration: {{ network_config }}"
+          - "Expected recent event health: {{ event_log_health }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"

@@ -48,3 +48,11 @@ network_config:
   address_state: "Preferred"
   dns_servers:
     - "127.0.0.1"
+
+event_log_health:
+  log_name: "System"
+  lookback_minutes: 60
+  levels:
+    - 1
+    - 2
+  max_allowed_events: 0
