@@ -27,3 +27,11 @@ windows_time:
   service_start_mode: "auto"
   expected_state_machine: 2
   expected_last_sync_error: 0
+
+network_config:
+  interface_alias: "Ethernet"
+  ipv4_address: "10.10.10.20"
+  prefix_length: 24
+  address_state: "Preferred"
+  dns_servers:
+    - "10.10.10.10"

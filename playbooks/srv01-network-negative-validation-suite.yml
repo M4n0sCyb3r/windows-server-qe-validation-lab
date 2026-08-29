@@ -1,0 +1,27 @@
+---
+- name: SRV01 Controlled Network Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    network_config:
+      interface_alias: "Ethernet"
+      ipv4_address: "10.10.10.99"
+      prefix_length: 24
+      address_state: "Preferred"
+      dns_servers:
+        - "10.10.10.10"
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled network negative validation
+      ansible.builtin.import_tasks: tasks/validate-network.yml
+      ignore_errors: true
+
+    - name: Display collected negative network results
+      ansible.builtin.debug:
+        var: qe_results
