@@ -74,3 +74,9 @@ account_policy:
   password_complexity: 1
   password_history_size: 24
   lockout_bad_count: 0
+
+admin_group_membership:
+  group_name: "Administrators"
+  required_members:
+    - "CORP\\Domain Admins"
+    - "SRV01\\Administrator"

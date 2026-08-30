@@ -79,6 +79,11 @@
       tags:
         - accountpolicy
 
+    - name: Validate Administrators group membership
+      ansible.builtin.import_tasks: tasks/validate-admin-group-membership.yml
+      tags:
+        - admingroup
+
     - name: Validate WinRM authentication configuration
       ansible.builtin.import_tasks: tasks/validate-winrm-auth.yml
       tags:
@@ -100,6 +105,7 @@
           - "Expected patch/reboot health: {{ patch_reboot_health }}"
           - "Expected scheduled task: {{ scheduled_task }}"
           - "Expected account policy: {{ account_policy }}"
+          - "Expected Administrators group membership: {{ admin_group_membership }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"
