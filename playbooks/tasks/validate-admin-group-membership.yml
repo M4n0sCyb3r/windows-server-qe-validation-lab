@@ -1,0 +1,102 @@
+---
+- name: Collect Administrators group membership
+  ansible.windows.win_powershell:
+    script: |
+      $computer = Get-CimInstance Win32_ComputerSystem
+      $isDomainController = $computer.DomainRole -in @(4, 5)
+
+      if ($isDomainController) {
+          $members = @(
+              Get-ADGroupMember -Identity "{{ admin_group_membership.group_name }}" |
+              ForEach-Object {
+                  [PSCustomObject]@{
+                      Name = $_.Name
+                      ObjectClass = $_.ObjectClass
+                      Source = "ActiveDirectory"
+                  }
+              }
+          )
+
+          $mode = "ActiveDirectory"
+      }
+      else {
+          $members = @(
+              Get-LocalGroupMember -Group "{{ admin_group_membership.group_name }}" |
+              ForEach-Object {
+                  [PSCustomObject]@{
+                      Name = $_.Name
+                      ObjectClass = $_.ObjectClass
+                      Source = $_.PrincipalSource.ToString()
+                  }
+              }
+          )
+
+          $mode = "LocalSAM"
+      }
+
+      [PSCustomObject]@{
+          GroupName = "{{ admin_group_membership.group_name }}"
+          CollectionMode = $mode
+          IsDomainController = [bool]$isDomainController
+          Members = $members
+          MemberNames = @($members | ForEach-Object { $_.Name })
+      }
+  register: admin_group_raw
+  changed_when: false
+
+- name: Normalize Administrators group evidence
+  ansible.builtin.set_fact:
+    admin_group_actual: "{{ admin_group_raw.output[0] }}"
+  changed_when: false
+
+- name: Calculate missing required Administrators members
+  ansible.builtin.set_fact:
+    admin_group_missing_members: >-
+      {{
+        admin_group_membership.required_members
+        | difference(admin_group_actual.MemberNames)
+      }}
+  changed_when: false
+
+- name: Calculate Administrators group validation result
+  ansible.builtin.set_fact:
+    admin_group_validation_passed: >-
+      {{
+        (admin_group_missing_members | length) == 0
+      }}
+  changed_when: false
+
+- name: Build Administrators group QE result
+  ansible.builtin.set_fact:
+    admin_group_result:
+      test: "Administrators Group Membership"
+      expected:
+        group_name: "{{ admin_group_membership.group_name }}"
+        required_members: "{{ admin_group_membership.required_members }}"
+      actual:
+        collection_mode: "{{ admin_group_actual.CollectionMode }}"
+        is_domain_controller: "{{ admin_group_actual.IsDomainController }}"
+        member_names: "{{ admin_group_actual.MemberNames }}"
+        members: "{{ admin_group_actual.Members }}"
+        missing_required_members: "{{ admin_group_missing_members }}"
+      result: "{{ 'PASS' if admin_group_validation_passed else 'FAIL' }}"
+  changed_when: false
+
+- name: Display Administrators group QE result
+  ansible.builtin.debug:
+    var: admin_group_result
+
+- name: Add Administrators group result to QE results
+  ansible.builtin.set_fact:
+    qe_results: "{{ qe_results + [admin_group_result] }}"
+  changed_when: false
+
+- name: Assert required Administrators group members are present
+  ansible.builtin.assert:
+    that:
+      - admin_group_validation_passed
+    success_msg: "PASS: All required Administrators group members are present."
+    fail_msg: >-
+      FAIL: Missing required Administrators group members:
+      {{ admin_group_missing_members }}
+    quiet: true

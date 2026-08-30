@@ -1,0 +1,26 @@
+---
+- name: SRV01 Controlled Administrators Group Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    admin_group_membership:
+      group_name: "Administrators"
+      required_members:
+        - "CORP\\Domain Admins"
+        - "SRV01\\Administrator"
+        - "CORP\\FakeQEAdmin"
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled Administrators group negative validation
+      ansible.builtin.import_tasks: tasks/validate-admin-group-membership.yml
+      ignore_errors: true
+
+    - name: Display collected negative Administrators group results
+      ansible.builtin.debug:
+        var: qe_results
