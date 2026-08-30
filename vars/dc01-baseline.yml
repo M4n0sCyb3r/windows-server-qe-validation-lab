@@ -68,3 +68,11 @@ scheduled_task:
   expected_action_execute: "%windir%\\system32\\srvinitconfig.exe"
   expected_action_arguments: "/disableconfigtask"
   expected_trigger_enabled: true
+
+account_policy:
+  minimum_password_age: 1
+  maximum_password_age: 42
+  minimum_password_length: 7
+  password_complexity: 1
+  password_history_size: 24
+  lockout_bad_count: 0

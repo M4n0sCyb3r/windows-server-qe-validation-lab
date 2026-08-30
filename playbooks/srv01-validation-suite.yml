@@ -74,6 +74,11 @@
       tags:
         - scheduledtask
 
+    - name: Validate account policy configuration
+      ansible.builtin.import_tasks: tasks/validate-account-policy.yml
+      tags:
+        - accountpolicy
+
     - name: Display SRV01 validation summary
       ansible.builtin.debug:
         msg:
@@ -85,6 +90,7 @@
           - "Expected recent event health: {{ event_log_health }}"
           - "Expected patch/reboot health: {{ patch_reboot_health }}"
           - "Expected scheduled task: {{ scheduled_task }}"
+          - "Expected account policy: {{ account_policy }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"

@@ -1,0 +1,113 @@
+---
+- name: Collect Windows account policy
+  ansible.windows.win_powershell:
+    script: |
+      $tempFile = Join-Path $env:TEMP "qe-security-policy.cfg"
+
+      try {
+          secedit /export /cfg $tempFile /areas SECURITYPOLICY | Out-Null
+
+          if (-not (Test-Path $tempFile)) {
+              throw "Security policy export file was not created."
+          }
+
+          $policy = @{}
+
+          Get-Content $tempFile | ForEach-Object {
+              if ($_ -match '^\s*([^;][^=]+?)\s*=\s*(.*?)\s*$') {
+                  $key = $matches[1].Trim()
+                  $value = $matches[2].Trim()
+                  $policy[$key] = $value
+              }
+          }
+
+          $requiredKeys = @(
+              'MinimumPasswordAge',
+              'MaximumPasswordAge',
+              'MinimumPasswordLength',
+              'PasswordComplexity',
+              'PasswordHistorySize',
+              'LockoutBadCount'
+          )
+
+          foreach ($key in $requiredKeys) {
+              if (-not $policy.ContainsKey($key)) {
+                  throw "Required account policy setting '$key' was not found."
+              }
+          }
+
+          [PSCustomObject]@{
+              minimum_password_age    = [int]$policy['MinimumPasswordAge']
+              maximum_password_age    = [int]$policy['MaximumPasswordAge']
+              minimum_password_length = [int]$policy['MinimumPasswordLength']
+              password_complexity     = [int]$policy['PasswordComplexity']
+              password_history_size   = [int]$policy['PasswordHistorySize']
+              lockout_bad_count       = [int]$policy['LockoutBadCount']
+          }
+      }
+      finally {
+          if (Test-Path $tempFile) {
+              Remove-Item $tempFile -Force
+          }
+      }
+  register: account_policy_raw
+  changed_when: false
+
+- name: Normalize collected account policy
+  ansible.builtin.set_fact:
+    account_policy_actual: "{{ account_policy_raw.output[0] }}"
+  changed_when: false
+
+- name: Build account policy QE result
+  ansible.builtin.set_fact:
+    account_policy_result:
+      test: "Account Policy Configuration"
+      expected:
+        minimum_password_age: "{{ account_policy.minimum_password_age }}"
+        maximum_password_age: "{{ account_policy.maximum_password_age }}"
+        minimum_password_length: "{{ account_policy.minimum_password_length }}"
+        password_complexity: "{{ account_policy.password_complexity }}"
+        password_history_size: "{{ account_policy.password_history_size }}"
+        lockout_bad_count: "{{ account_policy.lockout_bad_count }}"
+      actual:
+        minimum_password_age: "{{ account_policy_actual.minimum_password_age }}"
+        maximum_password_age: "{{ account_policy_actual.maximum_password_age }}"
+        minimum_password_length: "{{ account_policy_actual.minimum_password_length }}"
+        password_complexity: "{{ account_policy_actual.password_complexity }}"
+        password_history_size: "{{ account_policy_actual.password_history_size }}"
+        lockout_bad_count: "{{ account_policy_actual.lockout_bad_count }}"
+      result: >-
+        {{
+          'PASS'
+          if
+          (account_policy_actual.minimum_password_age | int == account_policy.minimum_password_age | int) and
+          (account_policy_actual.maximum_password_age | int == account_policy.maximum_password_age | int) and
+          (account_policy_actual.minimum_password_length | int == account_policy.minimum_password_length | int) and
+          (account_policy_actual.password_complexity | int == account_policy.password_complexity | int) and
+          (account_policy_actual.password_history_size | int == account_policy.password_history_size | int) and
+          (account_policy_actual.lockout_bad_count | int == account_policy.lockout_bad_count | int)
+          else 'FAIL'
+        }}
+  changed_when: false
+
+- name: Display account policy QE result
+  ansible.builtin.debug:
+    var: account_policy_result
+
+- name: Add account policy result to QE results
+  ansible.builtin.set_fact:
+    qe_results: "{{ qe_results + [account_policy_result] }}"
+  changed_when: false
+
+- name: Assert account policy matches baseline
+  ansible.builtin.assert:
+    that:
+      - account_policy_actual.minimum_password_age | int == account_policy.minimum_password_age | int
+      - account_policy_actual.maximum_password_age | int == account_policy.maximum_password_age | int
+      - account_policy_actual.minimum_password_length | int == account_policy.minimum_password_length | int
+      - account_policy_actual.password_complexity | int == account_policy.password_complexity | int
+      - account_policy_actual.password_history_size | int == account_policy.password_history_size | int
+      - account_policy_actual.lockout_bad_count | int == account_policy.lockout_bad_count | int
+    success_msg: "PASS: Account policy matches baseline."
+    fail_msg: "FAIL: Account policy does not match baseline."
+    quiet: true
