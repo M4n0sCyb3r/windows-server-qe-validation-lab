@@ -83,3 +83,12 @@ admin_group_membership:
     - "Domain Admins"
     - "Enterprise Admins"
     - "Administrator"
+
+account_state:
+  required_accounts:
+    - name: "Administrator"
+      enabled: true
+    - name: "Guest"
+      enabled: false
+    - name: "krbtgt"
+      enabled: false

@@ -1,0 +1,149 @@
+---
+- name: Collect required account state
+  ansible.windows.win_powershell:
+    script: |
+      $computer = Get-CimInstance Win32_ComputerSystem
+      $isDomainController = $computer.DomainRole -in @(4, 5)
+
+      $requiredAccounts = @(
+      {% for account in account_state.required_accounts %}
+          [PSCustomObject]@{
+              Name = "{{ account.name }}"
+              ExpectedEnabled = [bool]{{ '$true' if account.enabled else '$false' }}
+          }{% if not loop.last %},{% endif %}
+      {% endfor %}
+      )
+
+      $results = @()
+
+      foreach ($required in $requiredAccounts) {
+          if ($isDomainController) {
+              $account = Get-ADUser `
+                  -Identity $required.Name `
+                  -Properties Enabled `
+                  -ErrorAction SilentlyContinue
+
+              $source = "ActiveDirectory"
+          }
+          else {
+              $account = Get-LocalUser `
+                  -Name $required.Name `
+                  -ErrorAction SilentlyContinue
+
+              $source = "LocalSAM"
+          }
+
+          if ($null -eq $account) {
+              $results += [PSCustomObject]@{
+                  Name = $required.Name
+                  Exists = $false
+                  Enabled = $null
+                  ExpectedEnabled = [bool]$required.ExpectedEnabled
+                  Source = $source
+                  Result = "FAIL"
+              }
+          }
+          else {
+              $enabledMatches = (
+                  [bool]$account.Enabled -eq
+                  [bool]$required.ExpectedEnabled
+              )
+
+              $results += [PSCustomObject]@{
+                  Name = $required.Name
+                  Exists = $true
+                  Enabled = [bool]$account.Enabled
+                  ExpectedEnabled = [bool]$required.ExpectedEnabled
+                  Source = $source
+                  Result = if ($enabledMatches) {
+                      "PASS"
+                  }
+                  else {
+                      "FAIL"
+                  }
+              }
+          }
+      }
+
+      $evidence = [PSCustomObject]@{
+          IsDomainController = [bool]$isDomainController
+          CollectionMode = if ($isDomainController) {
+              "ActiveDirectory"
+          }
+          else {
+              "LocalSAM"
+          }
+          Accounts = $results
+      }
+
+      $evidence | ConvertTo-Json -Depth 6 -Compress
+  register: account_state_raw
+  changed_when: false
+
+- name: Parse account state JSON evidence
+  ansible.builtin.set_fact:
+    account_state_actual: "{{ account_state_raw.output[0] | from_json }}"
+  changed_when: false
+
+- name: Calculate failed account state checks
+  ansible.builtin.set_fact:
+    account_state_failures: >-
+      {{
+        account_state_actual.Accounts
+        | selectattr('Result', 'equalto', 'FAIL')
+        | list
+      }}
+  changed_when: false
+
+- name: Calculate overall account state result
+  ansible.builtin.set_fact:
+    account_state_validation_passed: >-
+      {{
+        (account_state_failures | length) == 0
+      }}
+  changed_when: false
+
+- name: Display account state validation evidence
+  ansible.builtin.debug:
+    msg:
+      test: "Built-in Account State"
+      collection_mode: "{{ account_state_actual.CollectionMode }}"
+      is_domain_controller: "{{ account_state_actual.IsDomainController }}"
+      accounts: "{{ account_state_actual.Accounts }}"
+      failures: "{{ account_state_failures }}"
+      result: "{{ 'PASS' if account_state_validation_passed else 'FAIL' }}"
+
+- name: Add individual account state results to QE results
+  ansible.builtin.set_fact:
+    qe_results: >-
+      {{
+        qe_results + [
+          {
+            'test': 'Account State - ' ~ item.Name,
+            'expected': {
+              'exists': true,
+              'enabled': item.ExpectedEnabled
+            },
+            'actual': {
+              'exists': item.Exists,
+              'enabled': item.Enabled,
+              'source': item.Source
+            },
+            'result': item.Result
+          }
+        ]
+      }}
+  loop: "{{ account_state_actual.Accounts }}"
+  loop_control:
+    label: "{{ item.Name }}"
+  changed_when: false
+
+- name: Assert required account states match baseline
+  ansible.builtin.assert:
+    that:
+      - account_state_validation_passed
+    success_msg: "PASS: Required account states match baseline."
+    fail_msg: >-
+      FAIL: One or more required account states do not match baseline:
+      {{ account_state_failures }}
+    quiet: true

@@ -84,6 +84,11 @@
       tags:
         - admingroup
 
+    - name: Validate built-in account states
+      ansible.builtin.import_tasks: tasks/validate-account-state.yml
+      tags:
+        - accountstate
+
     - name: Validate WinRM authentication configuration
       ansible.builtin.import_tasks: tasks/validate-winrm-auth.yml
       tags:
@@ -106,6 +111,7 @@
           - "Expected scheduled task: {{ scheduled_task }}"
           - "Expected account policy: {{ account_policy }}"
           - "Expected Administrators group membership: {{ admin_group_membership }}"
+          - "Expected account states: {{ account_state }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"

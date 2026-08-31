@@ -1,0 +1,30 @@
+---
+- name: SRV01 Controlled Account State Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    account_state:
+      required_accounts:
+        - name: "Administrator"
+          enabled: true
+        - name: "Guest"
+          enabled: true
+        - name: "DefaultAccount"
+          enabled: false
+        - name: "WDAGUtilityAccount"
+          enabled: false
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled account state negative validation
+      ansible.builtin.import_tasks: tasks/validate-account-state.yml
+      ignore_errors: true
+
+    - name: Display collected negative account state results
+      ansible.builtin.debug:
+        var: qe_results

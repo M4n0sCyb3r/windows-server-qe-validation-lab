@@ -80,3 +80,14 @@ admin_group_membership:
   required_members:
     - "CORP\\Domain Admins"
     - "SRV01\\Administrator"
+
+account_state:
+  required_accounts:
+    - name: "Administrator"
+      enabled: true
+    - name: "Guest"
+      enabled: false
+    - name: "DefaultAccount"
+      enabled: false
+    - name: "WDAGUtilityAccount"
+      enabled: false
