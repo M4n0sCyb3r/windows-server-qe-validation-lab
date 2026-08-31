@@ -1,0 +1,179 @@
+---
+- name: Collect Windows User Rights Assignment
+  ansible.windows.win_powershell:
+    script: |
+      $tempFile = Join-Path $env:TEMP "qe-user-rights.cfg"
+
+      try {
+          secedit /export /cfg $tempFile /areas USER_RIGHTS | Out-Null
+
+          if (-not (Test-Path $tempFile)) {
+              throw "User Rights Assignment export file was not created."
+          }
+
+          $policy = @{}
+
+          Get-Content $tempFile | ForEach-Object {
+              if ($_ -match '^\s*(Se[A-Za-z0-9]+)\s*=\s*(.*)\s*$') {
+                  $right = $matches[1].Trim()
+                  $value = $matches[2].Trim()
+
+                  if ([string]::IsNullOrWhiteSpace($value)) {
+                      $policy[$right] = [object[]]@()
+                  }
+                  else {
+                      $policy[$right] = [object[]]@(
+                          $value -split ',' |
+                          ForEach-Object {
+                              $_.Trim().TrimStart('*')
+                          } |
+                          Where-Object {
+                              -not [string]::IsNullOrWhiteSpace($_)
+                          }
+                      )
+                  }
+              }
+          }
+
+          [object[]]$serviceLogon = @()
+          [object[]]$remoteInteractive = @()
+          [object[]]$denyRemoteInteractive = @()
+          [object[]]$denyServiceLogon = @()
+
+          if ($policy.ContainsKey('SeServiceLogonRight')) {
+              $serviceLogon = [object[]]@(
+                  $policy['SeServiceLogonRight']
+              )
+          }
+
+          if ($policy.ContainsKey('SeRemoteInteractiveLogonRight')) {
+              $remoteInteractive = [object[]]@(
+                  $policy['SeRemoteInteractiveLogonRight']
+              )
+          }
+
+          if ($policy.ContainsKey('SeDenyRemoteInteractiveLogonRight')) {
+              $denyRemoteInteractive = [object[]]@(
+                  $policy['SeDenyRemoteInteractiveLogonRight']
+              )
+          }
+
+          if ($policy.ContainsKey('SeDenyServiceLogonRight')) {
+              $denyServiceLogon = [object[]]@(
+                  $policy['SeDenyServiceLogonRight']
+              )
+          }
+
+          $evidence = [PSCustomObject]@{
+              se_service_logon_right = [object[]]$serviceLogon
+              se_remote_interactive_logon_right = [object[]]$remoteInteractive
+              se_deny_remote_interactive_logon_right = [object[]]$denyRemoteInteractive
+              se_deny_service_logon_right = [object[]]$denyServiceLogon
+          }
+
+          $evidence | ConvertTo-Json -Depth 5 -Compress
+      }
+      finally {
+          if (Test-Path $tempFile) {
+              Remove-Item $tempFile -Force
+          }
+      }
+  register: user_rights_raw
+  changed_when: false
+
+- name: Parse User Rights Assignment evidence
+  ansible.builtin.set_fact:
+    user_rights_actual: "{{ user_rights_raw.output[0] | from_json }}"
+  changed_when: false
+
+- name: Initialize User Rights Assignment result list
+  ansible.builtin.set_fact:
+    user_rights_results: []
+  changed_when: false
+
+- name: Build individual User Rights Assignment results
+  ansible.builtin.set_fact:
+    user_rights_results: >-
+      {{
+        user_rights_results + [
+          {
+            'test': 'User Right - ' ~ item.key,
+            'expected': {
+              'members': item.value | sort
+            },
+            'actual': {
+              'members': (
+                user_rights_actual[item.key]
+                | default([], true)
+                | sort
+              )
+            },
+            'result': (
+              'PASS'
+              if
+              (
+                (
+                  item.value
+                  | difference(
+                      user_rights_actual[item.key]
+                      | default([], true)
+                    )
+                  | length
+                ) == 0
+              )
+              and
+              (
+                (
+                  user_rights_actual[item.key]
+                  | default([], true)
+                  | difference(item.value)
+                  | length
+                ) == 0
+              )
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  loop: "{{ user_rights | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  changed_when: false
+
+- name: Calculate failed User Rights Assignment checks
+  ansible.builtin.set_fact:
+    user_rights_failures: >-
+      {{
+        user_rights_results
+        | selectattr('result', 'equalto', 'FAIL')
+        | list
+      }}
+  changed_when: false
+
+- name: Display User Rights Assignment evidence
+  ansible.builtin.debug:
+    msg:
+      test: "User Rights Assignment"
+      results: "{{ user_rights_results }}"
+      failures: "{{ user_rights_failures }}"
+      result: >-
+        {{
+          'PASS'
+          if (user_rights_failures | length) == 0
+          else 'FAIL'
+        }}
+
+- name: Add User Rights Assignment results to QE results
+  ansible.builtin.set_fact:
+    qe_results: "{{ qe_results + user_rights_results }}"
+  changed_when: false
+
+- name: Assert User Rights Assignment matches baseline
+  ansible.builtin.assert:
+    that:
+      - (user_rights_failures | length) == 0
+    success_msg: "PASS: User Rights Assignment matches baseline."
+    fail_msg: >-
+      FAIL: One or more User Rights Assignment settings do not match baseline:
+      {{ user_rights_failures }}
+    quiet: true

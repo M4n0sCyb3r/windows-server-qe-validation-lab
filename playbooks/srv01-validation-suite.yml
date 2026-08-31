@@ -89,6 +89,11 @@
       tags:
         - accountstate
 
+    - name: Validate User Rights Assignment
+      ansible.builtin.import_tasks: tasks/validate-user-rights.yml
+      tags:
+        - userrights
+
     - name: Display SRV01 validation summary
       ansible.builtin.debug:
         msg:
@@ -103,6 +108,7 @@
           - "Expected account policy: {{ account_policy }}"
           - "Expected Administrators group membership: {{ admin_group_membership }}"
           - "Expected account states: {{ account_state }}"
+          - "Expected User Rights Assignment: {{ user_rights }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"

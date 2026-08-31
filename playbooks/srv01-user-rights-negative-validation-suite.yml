@@ -1,0 +1,30 @@
+---
+- name: SRV01 Controlled User Rights Assignment Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    user_rights:
+      se_service_logon_right:
+        - "S-1-5-80-0"
+        - "S-1-5-99-0"
+
+      se_remote_interactive_logon_right:
+        - "S-1-5-32-544"
+
+      se_deny_remote_interactive_logon_right: []
+      se_deny_service_logon_right: []
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled User Rights Assignment negative validation
+      ansible.builtin.import_tasks: tasks/validate-user-rights.yml
+      ignore_errors: true
+
+    - name: Display collected negative User Rights Assignment results
+      ansible.builtin.debug:
+        var: qe_results
