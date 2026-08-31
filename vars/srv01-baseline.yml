@@ -91,3 +91,13 @@ account_state:
       enabled: false
     - name: "WDAGUtilityAccount"
       enabled: false
+
+user_rights:
+  se_service_logon_right:
+    - "S-1-5-80-0"
+    - "S-1-5-99-0"
+  se_remote_interactive_logon_right:
+    - "S-1-5-32-544"
+    - "S-1-5-32-555"
+  se_deny_remote_interactive_logon_right: []
+  se_deny_service_logon_right: []
