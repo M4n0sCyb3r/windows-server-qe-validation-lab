@@ -101,3 +101,9 @@ user_rights:
     - "S-1-5-32-544"
   se_deny_remote_interactive_logon_right: []
   se_deny_service_logon_right: []
+
+advanced_audit_policy:
+  logon: "Success and Failure"
+  account_lockout: "Success"
+  user_account_management: "Success"
+  security_group_management: "Success"

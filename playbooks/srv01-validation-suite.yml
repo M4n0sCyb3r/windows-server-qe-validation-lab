@@ -94,6 +94,11 @@
       tags:
         - userrights
 
+    - name: Validate Advanced Audit Policy
+      ansible.builtin.import_tasks: tasks/validate-audit-policy.yml
+      tags:
+        - auditpolicy
+
     - name: Display SRV01 validation summary
       ansible.builtin.debug:
         msg:
@@ -109,6 +114,7 @@
           - "Expected Administrators group membership: {{ admin_group_membership }}"
           - "Expected account states: {{ account_state }}"
           - "Expected User Rights Assignment: {{ user_rights }}"
+          - "Expected Advanced Audit Policy: {{ advanced_audit_policy }}"
           - "Required services: {{ required_services }}"
           - "Required features: {{ required_features }}"
           - "Expected DNS client: {{ dns_client_server }}"

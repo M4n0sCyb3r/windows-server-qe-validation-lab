@@ -1,0 +1,25 @@
+---
+- name: SRV01 Controlled Advanced Audit Policy Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    advanced_audit_policy:
+      logon: "Success and Failure"
+      account_lockout: "Success"
+      user_account_management: "Success and Failure"
+      security_group_management: "Success"
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled Advanced Audit Policy negative validation
+      ansible.builtin.import_tasks: tasks/validate-audit-policy.yml
+      ignore_errors: true
+
+    - name: Display collected negative Advanced Audit Policy results
+      ansible.builtin.debug:
+        var: qe_results
