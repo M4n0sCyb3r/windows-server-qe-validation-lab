@@ -45,22 +45,27 @@ check_exit_code \
     "Infrastructure both hosts pass" \
     0 \
     python scripts/infrastructure_report.py \
-        tests/fixtures/infrastructure/dc01-pass.json \
-        tests/fixtures/infrastructure/srv01-pass.json
+    tests/fixtures/infrastructure/dc01-pass.json \
+    tests/fixtures/infrastructure/srv01-pass.json
 
 check_exit_code \
     "Infrastructure one host fails" \
     1 \
     python scripts/infrastructure_report.py \
-        tests/fixtures/infrastructure/dc01-pass.json \
-        tests/fixtures/infrastructure/srv01-fail.json
+    tests/fixtures/infrastructure/dc01-pass.json \
+    tests/fixtures/infrastructure/srv01-fail.json
 
 check_exit_code \
     "Infrastructure report missing" \
     1 \
     python scripts/infrastructure_report.py \
-        tests/fixtures/infrastructure/dc01-pass.json \
-        tests/fixtures/infrastructure/does-not-exist.json
+    tests/fixtures/infrastructure/dc01-pass.json \
+    tests/fixtures/infrastructure/does-not-exist.json
+
+check_exit_code \
+    "Failure evidence preserved after assertion" \
+    0 \
+    ./scripts/test-failure-evidence-preservation.sh
 
 echo "QE Harness Self-Test"
 echo "--------------------"

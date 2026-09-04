@@ -1,0 +1,63 @@
+---
+- name: Test failure evidence preservation
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars:
+    failure_evidence_report: "/tmp/qe-failure-evidence-regression.json"
+
+  tasks:
+    - name: Initialize QE regression state
+      ansible.builtin.set_fact:
+        qe_results: []
+        qe_suite_failed: false
+        qe_failed_task: ""
+        qe_failure_message: ""
+      changed_when: false
+
+    - name: Run controlled failing validation
+      block:
+        - name: Add controlled failing QE result
+          ansible.builtin.set_fact:
+            qe_results: >-
+              {{
+                qe_results + [
+                  {
+                    'test': 'Failure Evidence Regression',
+                    'expected': 'PASS',
+                    'actual': 'FAIL',
+                    'result': 'FAIL'
+                  }
+                ]
+              }}
+          changed_when: false
+
+        - name: Trigger controlled assertion failure
+          ansible.builtin.assert:
+            that:
+              - false
+            fail_msg: "Controlled failure for evidence-preservation regression test"
+            quiet: true
+
+      rescue:
+        - name: Record controlled suite failure
+          ansible.builtin.set_fact:
+            qe_suite_failed: true
+            qe_failed_task: "{{ ansible_failed_task.name }}"
+            qe_failure_message: "{{ ansible_failed_result.msg | default('Unknown failure') }}"
+          changed_when: false
+
+      always:
+        - name: Export preserved QE evidence
+          ansible.builtin.copy:
+            content: "{{ qe_results | to_nice_json }}"
+            dest: "{{ failure_evidence_report }}"
+            mode: "0600"
+
+    - name: Return nonzero after preserving evidence
+      ansible.builtin.fail:
+        msg: >-
+          Regression suite intentionally failed at
+          '{{ qe_failed_task }}': {{ qe_failure_message }}
+      when: qe_suite_failed | bool
