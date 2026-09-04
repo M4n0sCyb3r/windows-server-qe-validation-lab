@@ -14,124 +14,171 @@
       tags:
         - always
 
-    - name: Validate server identity and domain role
-      ansible.builtin.import_tasks: tasks/validate-identity.yml
-      tags:
-        - identity
-
-    - name: Validate Windows Time synchronization
-      ansible.builtin.import_tasks: tasks/validate-time.yml
-      tags:
-        - time
-
-    - name: Validate network configuration
-      ansible.builtin.import_tasks: tasks/validate-network.yml
-      tags:
-        - network
-
-    - name: Validate Microsoft Defender health
-      ansible.builtin.import_tasks: tasks/validate-defender.yml
-      tags:
-        - defender
-
-    - name: Validate required services
-      ansible.builtin.import_tasks: tasks/validate-services.yml
-      tags:
-        - services
-
-    - name: Validate DNS client configuration
-      ansible.builtin.import_tasks: tasks/validate-dns.yml
-      tags:
-        - dns
-
-    - name: Validate required Windows features
-      ansible.builtin.import_tasks: tasks/validate-features.yml
-      tags:
-        - features
-
-    - name: Validate Windows Firewall configuration
-      ansible.builtin.import_tasks: tasks/validate-firewall.yml
-      tags:
-        - firewall
-
-    - name: Validate System event log configuration
-      ansible.builtin.import_tasks: tasks/validate-event-log.yml
-      tags:
-        - eventlog
-
-    - name: Validate recent System event health
-      ansible.builtin.import_tasks: tasks/validate-event-health.yml
-      tags:
-        - eventhealth
-
-    - name: Validate patch and reboot health
-      ansible.builtin.import_tasks: tasks/validate-patch-reboot-health.yml
-      tags:
-        - patchhealth
-
-    - name: Validate scheduled task configuration
-      ansible.builtin.import_tasks: tasks/validate-scheduled-task.yml
-      tags:
-        - scheduledtask
-
-    - name: Validate account policy configuration
-      ansible.builtin.import_tasks: tasks/validate-account-policy.yml
-      tags:
-        - accountpolicy
-
-    - name: Validate Administrators group membership
-      ansible.builtin.import_tasks: tasks/validate-admin-group-membership.yml
-      tags:
-        - admingroup
-
-    - name: Validate built-in account states
-      ansible.builtin.import_tasks: tasks/validate-account-state.yml
-      tags:
-        - accountstate
-
-    - name: Validate User Rights Assignment
-      ansible.builtin.import_tasks: tasks/validate-user-rights.yml
-      tags:
-        - userrights
-
-    - name: Validate Advanced Audit Policy
-      ansible.builtin.import_tasks: tasks/validate-audit-policy.yml
-      tags:
-        - auditpolicy
-
-    - name: Display SRV01 validation summary
-      ansible.builtin.debug:
-        msg:
-          - "SRV01 QE Validation Summary"
-          - "Expected identity: {{ server_identity }}"
-          - "Expected Windows Time: {{ windows_time }}"
-          - "Expected network configuration: {{ network_config }}"
-          - "Expected Defender health: {{ defender_health }}"
-          - "Expected recent event health: {{ event_log_health }}"
-          - "Expected patch/reboot health: {{ patch_reboot_health }}"
-          - "Expected scheduled task: {{ scheduled_task }}"
-          - "Expected account policy: {{ account_policy }}"
-          - "Expected Administrators group membership: {{ admin_group_membership }}"
-          - "Expected account states: {{ account_state }}"
-          - "Expected User Rights Assignment: {{ user_rights }}"
-          - "Expected Advanced Audit Policy: {{ advanced_audit_policy }}"
-          - "Required services: {{ required_services }}"
-          - "Required features: {{ required_features }}"
-          - "Expected DNS client: {{ dns_client_server }}"
-          - "Expected Domain firewall enabled: {{ firewall_domain_enabled }}"
-          - "Expected System log enabled: {{ system_event_log.enabled }}"
-          - "Expected System log size: {{ system_event_log.maximum_size_bytes }}"
-          - "Expected System log mode: {{ system_event_log.log_mode }}"
-
-    - name: Display collected QE results
-      ansible.builtin.debug:
-        var: qe_results
-
-    - name: Export QE results to JSON
-      ansible.builtin.copy:
-        content: "{{ qe_results | to_nice_json }}"
-        dest: "../reports/srv01-qe-results.json"
-        mode: "0644"
-      delegate_to: localhost
-      run_once: true
+    - name: Initialize QE suite failure state
+      ansible.builtin.set_fact:
+        qe_suite_failed: false
+        qe_failed_task: ""
+        qe_failure_message: ""
       changed_when: false
+      tags:
+        - always
+
+    - name: Run SRV01 validation workflow
+      block:
+        - name: Validate server identity and domain role
+          ansible.builtin.import_tasks: tasks/validate-identity.yml
+          tags:
+            - identity
+
+        - name: Validate Windows Time synchronization
+          ansible.builtin.import_tasks: tasks/validate-time.yml
+          tags:
+            - time
+
+        - name: Validate network configuration
+          ansible.builtin.import_tasks: tasks/validate-network.yml
+          tags:
+            - network
+
+        - name: Validate Microsoft Defender health
+          ansible.builtin.import_tasks: tasks/validate-defender.yml
+          tags:
+            - defender
+
+        - name: Validate required services
+          ansible.builtin.import_tasks: tasks/validate-services.yml
+          tags:
+            - services
+
+        - name: Validate DNS client configuration
+          ansible.builtin.import_tasks: tasks/validate-dns.yml
+          tags:
+            - dns
+
+        - name: Validate required Windows features
+          ansible.builtin.import_tasks: tasks/validate-features.yml
+          tags:
+            - features
+
+        - name: Validate Windows Firewall configuration
+          ansible.builtin.import_tasks: tasks/validate-firewall.yml
+          tags:
+            - firewall
+
+        - name: Validate System event log configuration
+          ansible.builtin.import_tasks: tasks/validate-event-log.yml
+          tags:
+            - eventlog
+
+        - name: Validate recent System event health
+          ansible.builtin.import_tasks: tasks/validate-event-health.yml
+          tags:
+            - eventhealth
+
+        - name: Validate patch and reboot health
+          ansible.builtin.import_tasks: tasks/validate-patch-reboot-health.yml
+          tags:
+            - patchhealth
+
+        - name: Validate scheduled task configuration
+          ansible.builtin.import_tasks: tasks/validate-scheduled-task.yml
+          tags:
+            - scheduledtask
+
+        - name: Validate account policy configuration
+          ansible.builtin.import_tasks: tasks/validate-account-policy.yml
+          tags:
+            - accountpolicy
+
+        - name: Validate Administrators group membership
+          ansible.builtin.import_tasks: tasks/validate-admin-group-membership.yml
+          tags:
+            - admingroup
+
+        - name: Validate built-in account states
+          ansible.builtin.import_tasks: tasks/validate-account-state.yml
+          tags:
+            - accountstate
+
+        - name: Validate User Rights Assignment
+          ansible.builtin.import_tasks: tasks/validate-user-rights.yml
+          tags:
+            - userrights
+
+        - name: Validate Advanced Audit Policy
+          ansible.builtin.import_tasks: tasks/validate-audit-policy.yml
+          tags:
+            - auditpolicy
+
+        - name: Validate Windows Security Options
+          ansible.builtin.import_tasks: tasks/validate-security-options.yml
+          tags:
+            - securityoptions
+
+      rescue:
+        - name: Record SRV01 validation workflow failure
+          ansible.builtin.set_fact:
+            qe_suite_failed: true
+            qe_failed_task: "{{ ansible_failed_task.name | default('Unknown task') }}"
+            qe_failure_message: >-
+              {{
+                ansible_failed_result.msg
+                | default('Validation workflow failed')
+              }}
+          changed_when: false
+          tags:
+            - always
+
+      always:
+        - name: Display SRV01 validation summary
+          ansible.builtin.debug:
+            msg:
+              - "SRV01 QE Validation Summary"
+              - "Expected identity: {{ server_identity }}"
+              - "Expected Windows Time: {{ windows_time }}"
+              - "Expected network configuration: {{ network_config }}"
+              - "Expected Defender health: {{ defender_health }}"
+              - "Expected recent event health: {{ event_log_health }}"
+              - "Expected patch/reboot health: {{ patch_reboot_health }}"
+              - "Expected scheduled task: {{ scheduled_task }}"
+              - "Expected account policy: {{ account_policy }}"
+              - "Expected Administrators group membership: {{ admin_group_membership }}"
+              - "Expected account states: {{ account_state }}"
+              - "Expected User Rights Assignment: {{ user_rights }}"
+              - "Expected Advanced Audit Policy: {{ advanced_audit_policy }}"
+              - "Expected Windows Security Options: {{ security_options }}"
+              - "Required services: {{ required_services }}"
+              - "Required features: {{ required_features }}"
+              - "Expected DNS client: {{ dns_client_server }}"
+              - "Expected Domain firewall enabled: {{ firewall_domain_enabled }}"
+              - "Expected System log enabled: {{ system_event_log.enabled }}"
+              - "Expected System log size: {{ system_event_log.maximum_size_bytes }}"
+              - "Expected System log mode: {{ system_event_log.log_mode }}"
+          tags:
+            - always
+
+        - name: Display collected QE results
+          ansible.builtin.debug:
+            var: qe_results
+          tags:
+            - always
+
+        - name: Export QE results to JSON
+          ansible.builtin.copy:
+            content: "{{ qe_results | to_nice_json }}"
+            dest: "../reports/srv01-qe-results.json"
+            mode: "0644"
+          delegate_to: localhost
+          run_once: true
+          changed_when: false
+          tags:
+            - always
+
+    - name: Fail SRV01 suite after preserving QE evidence
+      ansible.builtin.fail:
+        msg: >-
+          SRV01 validation failed at '{{ qe_failed_task }}':
+          {{ qe_failure_message }}
+      when: qe_suite_failed | bool
+      tags:
+        - always

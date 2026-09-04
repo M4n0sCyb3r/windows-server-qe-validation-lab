@@ -1,0 +1,140 @@
+---
+- name: Collect Windows Security Options registry values
+  ansible.windows.win_powershell:
+    script: |
+      $path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa'
+
+      $propertyNames = @{
+          lm_compatibility_level = 'LmCompatibilityLevel'
+          restrict_anonymous = 'RestrictAnonymous'
+          restrict_anonymous_sam = 'RestrictAnonymousSAM'
+      }
+
+      $results = @{}
+
+      foreach ($key in $propertyNames.Keys) {
+          $propertyName = $propertyNames[$key]
+
+          $property = Get-ItemProperty `
+              -Path $path `
+              -Name $propertyName `
+              -ErrorAction SilentlyContinue
+
+          if ($null -eq $property) {
+              $results[$key] = [PSCustomObject]@{
+                  present = $false
+                  value = $null
+              }
+          }
+          else {
+              $results[$key] = [PSCustomObject]@{
+                  present = $true
+                  value = $property.$propertyName
+              }
+          }
+      }
+
+      $evidence = [PSCustomObject]@{
+          lm_compatibility_level = $results['lm_compatibility_level']
+          restrict_anonymous = $results['restrict_anonymous']
+          restrict_anonymous_sam = $results['restrict_anonymous_sam']
+      }
+
+      $evidence | ConvertTo-Json -Depth 5 -Compress
+  register: security_options_raw
+  changed_when: false
+
+- name: Parse Windows Security Options evidence
+  ansible.builtin.set_fact:
+    security_options_actual: "{{ security_options_raw.output[0] | from_json }}"
+  changed_when: false
+
+- name: Initialize Windows Security Options result list
+  ansible.builtin.set_fact:
+    security_options_results: []
+  changed_when: false
+
+- name: Build individual Windows Security Options results
+  ansible.builtin.set_fact:
+    security_options_results: >-
+      {{
+        security_options_results + [
+          {
+            'test': 'Security Option - ' ~ item.key,
+            'expected': {
+              'present': item.value.expected_present,
+              'value': (
+                item.value.expected_value
+                if item.value.expected_present
+                else none
+              )
+            },
+            'actual': {
+              'present': security_options_actual[item.key].present,
+              'value': security_options_actual[item.key].value
+            },
+            'result': (
+              'PASS'
+              if
+              (
+                security_options_actual[item.key].present
+                == item.value.expected_present
+              )
+              and
+              (
+                (
+                  not item.value.expected_present
+                )
+                or
+                (
+                  security_options_actual[item.key].value
+                  == item.value.expected_value
+                )
+              )
+              else 'FAIL'
+            )
+          }
+        ]
+      }}
+  loop: "{{ security_options | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  changed_when: false
+
+- name: Calculate failed Windows Security Options checks
+  ansible.builtin.set_fact:
+    security_options_failures: >-
+      {{
+        security_options_results
+        | selectattr('result', 'equalto', 'FAIL')
+        | list
+      }}
+  changed_when: false
+
+- name: Display Windows Security Options evidence
+  ansible.builtin.debug:
+    msg:
+      test: "Windows Security Options"
+      results: "{{ security_options_results }}"
+      failures: "{{ security_options_failures }}"
+      result: >-
+        {{
+          'PASS'
+          if (security_options_failures | length) == 0
+          else 'FAIL'
+        }}
+
+- name: Add Windows Security Options results to QE results
+  ansible.builtin.set_fact:
+    qe_results: "{{ qe_results + security_options_results }}"
+  changed_when: false
+
+- name: Assert Windows Security Options match baseline
+  ansible.builtin.assert:
+    that:
+      - (security_options_failures | length) == 0
+    success_msg: "PASS: Windows Security Options match baseline."
+    fail_msg: >-
+      FAIL: One or more Windows Security Options do not match baseline:
+      {{ security_options_failures }}
+    quiet: true

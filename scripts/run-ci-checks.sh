@@ -119,13 +119,18 @@ ansible-playbook \
   --syntax-check \
   --ask-vault-password
 
+ansible-playbook \
+  -i inventory/hosts.yml \
+  playbooks/srv01-security-options-negative-validation-suite.yml \
+  --syntax-check \
+  --ask-vault-password
+
 echo "PASS: Ansible syntax"
 echo
 
 echo "[4/4] Running QE harness self-tests..."
 ./scripts/test-qe-harness.sh
 echo
-
 
 echo "========================================"
 echo "ALL CI CHECKS PASSED"
