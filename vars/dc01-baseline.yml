@@ -107,3 +107,15 @@ advanced_audit_policy:
   account_lockout: "Success"
   user_account_management: "Success"
   security_group_management: "Success"
+
+security_options:
+  lm_compatibility_level:
+    expected_present: false
+
+  restrict_anonymous:
+    expected_present: true
+    expected_value: 0
+
+  restrict_anonymous_sam:
+    expected_present: true
+    expected_value: 1

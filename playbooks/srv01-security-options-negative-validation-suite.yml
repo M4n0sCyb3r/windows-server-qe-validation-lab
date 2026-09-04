@@ -1,0 +1,31 @@
+---
+- name: SRV01 Controlled Windows Security Options Negative Validation
+  hosts: srv01
+  gather_facts: false
+
+  vars:
+    security_options:
+      lm_compatibility_level:
+        expected_present: false
+
+      restrict_anonymous:
+        expected_present: true
+        expected_value: 1
+
+      restrict_anonymous_sam:
+        expected_present: true
+        expected_value: 1
+
+  tasks:
+    - name: Initialize QE results list
+      ansible.builtin.set_fact:
+        qe_results: []
+      changed_when: false
+
+    - name: Run controlled Windows Security Options negative validation
+      ansible.builtin.import_tasks: tasks/validate-security-options.yml
+      ignore_errors: true
+
+    - name: Display collected negative Windows Security Options results
+      ansible.builtin.debug:
+        var: qe_results
