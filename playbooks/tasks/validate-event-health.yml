@@ -14,26 +14,33 @@
           $events | ForEach-Object {
               [PSCustomObject]@{
                   TimeCreated = $_.TimeCreated.ToString("o")
-                  Id = [int]$_.Id
-                  Level = $_.LevelDisplayName
-                  Provider = $_.ProviderName
-                  Message = $_.Message
+                  Id          = [int]$_.Id
+                  Level       = $_.LevelDisplayName
+                  Provider    = $_.ProviderName
+                  Message     = $_.Message
               }
           }
       )
 
-      [PSCustomObject]@{
-          Count = [int]$normalized.Count
+      $result = [PSCustomObject]@{
+          Count  = [int]$normalized.Count
           Events = $normalized
       }
-  register: event_health_result
+
+      $result | ConvertTo-Json -Depth 6 -Compress
+  register: event_health_raw
+  changed_when: false
+
+- name: Parse structured event health data
+  ansible.builtin.set_fact:
+    event_health_result: "{{ event_health_raw.output[0] | from_json }}"
   changed_when: false
 
 - name: Calculate event log health result
   ansible.builtin.set_fact:
     event_health_passed: >-
       {{
-        (event_health_result.output[0].Count | int)
+        (event_health_result.Count | int)
         <= (event_log_health.max_allowed_events | int)
       }}
   changed_when: false
@@ -48,8 +55,8 @@
         levels: "{{ event_log_health.levels }}"
         max_allowed_events: "{{ event_log_health.max_allowed_events }}"
       actual:
-        event_count: "{{ event_health_result.output[0].Count }}"
-        events: "{{ event_health_result.output[0].Events }}"
+        event_count: "{{ event_health_result.Count }}"
+        events: "{{ event_health_result.Events }}"
       result: "{{ 'PASS' if event_health_passed else 'FAIL' }}"
 
 - name: Add event log health result to QE results
@@ -66,8 +73,8 @@
               'max_allowed_events': event_log_health.max_allowed_events
             },
             'actual': {
-              'event_count': event_health_result.output[0].Count,
-              'events': event_health_result.output[0].Events
+              'event_count': event_health_result.Count,
+              'events': event_health_result.Events
             },
             'result': (
               'PASS'
