@@ -29,12 +29,14 @@ check_exit_code() {
 check_exit_code \
     "Passing QE fixture" \
     0 \
-    python scripts/qe_report.py tests/fixtures/qe-results-pass.json
+    python scripts/qe_report.py \
+    tests/fixtures/qe-results-pass.json
 
 check_exit_code \
     "Failing QE fixture" \
     1 \
-    python scripts/qe_report.py tests/fixtures/qe-results-fail.json
+    python scripts/qe_report.py \
+    tests/fixtures/qe-results-fail.json
 
 check_exit_code \
     "Missing report workflow" \
@@ -118,6 +120,19 @@ check_exit_code \
     python scripts/infrastructure_report.py \
     tests/fixtures/infrastructure/dc01-pass.json \
     tests/fixtures/schema/invalid-json.json
+
+check_exit_code \
+    "Schema error - empty evidence list" \
+    2 \
+    python scripts/qe_report.py \
+    tests/fixtures/schema/empty-list.json
+
+check_exit_code \
+    "Infrastructure schema error - empty evidence list" \
+    2 \
+    python scripts/infrastructure_report.py \
+    tests/fixtures/infrastructure/dc01-pass.json \
+    tests/fixtures/schema/empty-list.json
 
 check_exit_code \
     "Infrastructure workflow exit contract" \
