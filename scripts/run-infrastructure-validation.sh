@@ -63,13 +63,24 @@ printf "Infrastructure:   %s\n" "$report_exit"
 
 echo
 
-if [[ "$preflight_exit" -eq 0 &&
-      "$dc01_exit" -eq 0 &&
-      "$srv01_exit" -eq 0 &&
-      "$report_exit" -eq 0 ]]; then
-    echo "Infrastructure QE workflow completed successfully."
-    exit 0
+# ERROR has the highest precedence.
+# If any workflow component reports an evidence/workflow error,
+# the overall infrastructure workflow must also report ERROR.
+if [[ "$dc01_exit" -eq 2 ||
+      "$srv01_exit" -eq 2 ||
+      "$report_exit" -eq 2 ]]; then
+    echo "Infrastructure QE workflow ended with an ERROR."
+    exit 2
 fi
 
-echo "Infrastructure QE workflow failed."
-exit 1
+# If there are no errors but any component reports a validation
+# failure, the overall infrastructure workflow is FAIL.
+if [[ "$dc01_exit" -ne 0 ||
+      "$srv01_exit" -ne 0 ||
+      "$report_exit" -ne 0 ]]; then
+    echo "Infrastructure QE workflow detected validation failure."
+    exit 1
+fi
+
+echo "Infrastructure QE workflow completed successfully."
+exit 0

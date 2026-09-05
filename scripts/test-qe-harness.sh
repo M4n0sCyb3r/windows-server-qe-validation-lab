@@ -119,6 +119,11 @@ check_exit_code \
     tests/fixtures/infrastructure/dc01-pass.json \
     tests/fixtures/schema/invalid-json.json
 
+check_exit_code \
+    "Infrastructure workflow exit contract" \
+    0 \
+    ./scripts/test-workflow-exit-contract.sh
+
 echo "QE Harness Self-Test"
 echo "--------------------"
 echo "Passed: $passed"
