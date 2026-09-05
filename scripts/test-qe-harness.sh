@@ -57,7 +57,7 @@ check_exit_code \
 
 check_exit_code \
     "Infrastructure report missing" \
-    1 \
+    2 \
     python scripts/infrastructure_report.py \
     tests/fixtures/infrastructure/dc01-pass.json \
     tests/fixtures/infrastructure/does-not-exist.json
@@ -89,6 +89,34 @@ check_exit_code \
     "Schema error - invalid JSON" \
     2 \
     python scripts/qe_report.py \
+    tests/fixtures/schema/invalid-json.json
+
+check_exit_code \
+    "Infrastructure schema error - missing required field" \
+    2 \
+    python scripts/infrastructure_report.py \
+    tests/fixtures/infrastructure/dc01-pass.json \
+    tests/fixtures/schema/missing-field.json
+
+check_exit_code \
+    "Infrastructure schema error - invalid result value" \
+    2 \
+    python scripts/infrastructure_report.py \
+    tests/fixtures/infrastructure/dc01-pass.json \
+    tests/fixtures/schema/invalid-result.json
+
+check_exit_code \
+    "Infrastructure schema error - wrong top-level structure" \
+    2 \
+    python scripts/infrastructure_report.py \
+    tests/fixtures/infrastructure/dc01-pass.json \
+    tests/fixtures/schema/not-a-list.json
+
+check_exit_code \
+    "Infrastructure schema error - invalid JSON" \
+    2 \
+    python scripts/infrastructure_report.py \
+    tests/fixtures/infrastructure/dc01-pass.json \
     tests/fixtures/schema/invalid-json.json
 
 echo "QE Harness Self-Test"
