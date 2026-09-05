@@ -135,6 +135,29 @@ check_exit_code \
     tests/fixtures/schema/empty-list.json
 
 check_exit_code \
+    "Evidence coverage contract" \
+    0 \
+    ./scripts/test-evidence-coverage-contract.sh
+
+check_exit_code \
+    "Evidence coverage scope tracking" \
+    0 \
+    ./scripts/test-evidence-coverage-scope-tracking.sh
+
+check_exit_code \
+    "Incomplete coverage evidence is ERROR" \
+    2 \
+    python scripts/qe_report.py \
+    tests/fixtures/schema/incomplete-coverage.json
+
+check_exit_code \
+    "Infrastructure incomplete coverage evidence is ERROR" \
+    2 \
+    python scripts/infrastructure_report.py \
+    tests/fixtures/infrastructure/dc01-pass.json \
+    tests/fixtures/schema/incomplete-coverage.json
+
+check_exit_code \
     "Infrastructure workflow exit contract" \
     0 \
     ./scripts/test-workflow-exit-contract.sh

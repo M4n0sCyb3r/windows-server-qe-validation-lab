@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "requested_scopes": [
+    "network",
+    "services"
+  ],
+  "completed_scopes": [
+    "network"
+  ],
+  "results": [
+    {
+      "test": "Network IPv4 address",
+      "expected": "10.10.10.20",
+      "actual": "10.10.10.20",
+      "result": "PASS"
+    }
+  ]
+}
