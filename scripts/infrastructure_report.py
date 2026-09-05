@@ -9,12 +9,14 @@ EXIT_PASS = 0
 EXIT_FAIL = 1
 EXIT_ERROR = 2
 
+
 REQUIRED_FIELDS = {
     "test",
     "expected",
     "actual",
     "result",
 }
+
 
 VALID_RESULTS = {
     "PASS",
@@ -28,6 +30,12 @@ def validate_results(host, results):
     if not isinstance(results, list):
         errors.append(
             f"{host}: top-level report structure must be a JSON list"
+        )
+        return errors
+
+    if not results:
+        errors.append(
+            f"{host}: report contains zero test results"
         )
         return errors
 
@@ -134,24 +142,30 @@ else:
 
 statuses = []
 
+
 print("Infrastructure QE Summary")
 print("-------------------------")
+
 
 for host, report_file in reports.items():
     _, status = load_report(host, report_file)
     statuses.append(status)
 
+
 print()
 print("Overall Result")
 print("--------------")
+
 
 if "ERROR" in statuses:
     print("ERROR")
     sys.exit(EXIT_ERROR)
 
+
 if "FAIL" in statuses:
     print("FAIL")
     sys.exit(EXIT_FAIL)
+
 
 print("PASS")
 sys.exit(EXIT_PASS)

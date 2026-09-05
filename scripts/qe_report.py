@@ -9,12 +9,14 @@ EXIT_PASS = 0
 EXIT_FAIL = 1
 EXIT_ERROR = 2
 
+
 REQUIRED_FIELDS = {
     "test",
     "expected",
     "actual",
     "result",
 }
+
 
 VALID_RESULTS = {
     "PASS",
@@ -32,6 +34,11 @@ def validate_results(results):
     if not isinstance(results, list):
         evidence_error(
             "Top-level report structure must be a JSON list"
+        )
+
+    if not results:
+        evidence_error(
+            "Report contains zero test results"
         )
 
     for index, test in enumerate(results):
@@ -64,10 +71,12 @@ def validate_results(results):
 default_report = "reports/dc01-qe-results.json"
 report_file = sys.argv[1] if len(sys.argv) > 1 else default_report
 
+
 if not os.path.exists(report_file):
     print("ERROR: Expected report file was not created:")
     print(f"  {report_file}")
     sys.exit(EXIT_ERROR)
+
 
 try:
     with open(report_file, "r", encoding="utf-8") as file:
@@ -81,7 +90,9 @@ except OSError as error:
         f"Report could not be read: {error}"
     )
 
+
 validate_results(results)
+
 
 failed_results = [
     test
@@ -89,13 +100,16 @@ failed_results = [
     if test["result"] == "FAIL"
 ]
 
+
 passed_results = [
     test
     for test in results
     if test["result"] == "PASS"
 ]
 
+
 report_name = os.path.basename(report_file)
+
 
 if report_name.startswith("dc01"):
     system_name = "DC01"
@@ -104,6 +118,7 @@ elif report_name.startswith("srv01"):
 else:
     system_name = "Windows Server"
 
+
 print(f"{system_name} QE Validation Report")
 print("-------------------------")
 print(f"Report file:  {report_file}")
@@ -111,12 +126,15 @@ print(f"Total tests:  {len(results)}")
 print(f"Passed:       {len(passed_results)}")
 print(f"Failed:       {len(failed_results)}")
 
+
 print()
 print("Test Results")
 print("------------")
 
+
 for test in results:
     print(f"{test['result']}: {test['test']}")
+
 
 if failed_results:
     print()
@@ -128,13 +146,16 @@ if failed_results:
         print(f"  Expected: {test['expected']}")
         print(f"  Actual:   {test['actual']}")
 
+
 print()
 print("Overall Result")
 print("--------------")
 
+
 if failed_results:
     print("FAIL")
     sys.exit(EXIT_FAIL)
+
 
 print("PASS")
 sys.exit(EXIT_PASS)
