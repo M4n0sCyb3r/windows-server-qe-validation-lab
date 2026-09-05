@@ -1,0 +1,90 @@
+---
+- name: Test evidence coverage scope tracking
+  hosts: localhost
+  gather_facts: false
+  connection: local
+
+  vars:
+    coverage_report: "/tmp/qe-coverage-scope-regression.json"
+    interrupt_network_completion: false
+
+  tasks:
+    - name: Initialize supported validation scopes
+      ansible.builtin.set_fact:
+        qe_supported_scopes:
+          - network
+          - services
+        qe_completed_scopes: []
+      changed_when: false
+      tags:
+        - always
+
+    - name: Normalize requested validation scopes
+      ansible.builtin.set_fact:
+        qe_requested_scopes: >-
+          {{
+            (
+              qe_supported_scopes
+              if 'all' in ansible_run_tags
+              else
+              (
+                qe_supported_scopes
+                | select('in', ansible_run_tags)
+                | list
+              )
+            )
+            | reject('in', ansible_skip_tags)
+            | list
+          }}
+      changed_when: false
+      tags:
+        - always
+
+    - name: Run network validation experiment
+      block:
+        - name: Simulate successful network validation
+          ansible.builtin.debug:
+            msg: "network validation executed"
+
+        - name: Record network scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: >-
+              {{
+                qe_completed_scopes + ['network']
+              }}
+          changed_when: false
+          when: not interrupt_network_completion | bool
+      tags:
+        - network
+
+    - name: Run services validation experiment
+      block:
+        - name: Simulate successful services validation
+          ansible.builtin.debug:
+            msg: "services validation executed"
+
+        - name: Record services scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: >-
+              {{
+                qe_completed_scopes + ['services']
+              }}
+          changed_when: false
+      tags:
+        - services
+
+    - name: Export coverage scope evidence
+      ansible.builtin.copy:
+        content: >-
+          {{
+            {
+              'requested_scopes': qe_requested_scopes,
+              'completed_scopes': qe_completed_scopes
+            }
+            | to_nice_json
+          }}
+        dest: "{{ coverage_report }}"
+        mode: "0600"
+      changed_when: false
+      tags:
+        - always
