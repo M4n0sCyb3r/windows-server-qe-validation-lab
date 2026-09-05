@@ -67,6 +67,30 @@ check_exit_code \
     0 \
     ./scripts/test-failure-evidence-preservation.sh
 
+check_exit_code \
+    "Schema error - missing required field" \
+    2 \
+    python scripts/qe_report.py \
+    tests/fixtures/schema/missing-field.json
+
+check_exit_code \
+    "Schema error - invalid result value" \
+    2 \
+    python scripts/qe_report.py \
+    tests/fixtures/schema/invalid-result.json
+
+check_exit_code \
+    "Schema error - wrong top-level structure" \
+    2 \
+    python scripts/qe_report.py \
+    tests/fixtures/schema/not-a-list.json
+
+check_exit_code \
+    "Schema error - invalid JSON" \
+    2 \
+    python scripts/qe_report.py \
+    tests/fixtures/schema/invalid-json.json
+
 echo "QE Harness Self-Test"
 echo "--------------------"
 echo "Passed: $passed"

@@ -1,0 +1,7 @@
+[
+  {
+    "test": "Malformed Evidence Test",
+    "expected": "Running",
+    "result": "PASS"
+  }
+]
