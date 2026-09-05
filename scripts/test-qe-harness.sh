@@ -124,6 +124,11 @@ check_exit_code \
     0 \
     ./scripts/test-workflow-exit-contract.sh
 
+check_exit_code \
+    "Host workflow evidence contract" \
+    0 \
+    ./scripts/test-host-workflow-evidence-contract.sh
+
 echo "QE Harness Self-Test"
 echo "--------------------"
 echo "Passed: $passed"
