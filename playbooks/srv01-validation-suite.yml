@@ -7,18 +7,53 @@
     - ../vars/srv01-baseline.yml
 
   tasks:
-    - name: Initialize QE results list
+    - name: Initialize SRV01 QE state
       ansible.builtin.set_fact:
         qe_results: []
+        qe_suite_failed: false
+        qe_failed_task: ""
+        qe_failure_message: ""
+        qe_supported_scopes:
+          - identity
+          - time
+          - network
+          - defender
+          - services
+          - dns
+          - features
+          - firewall
+          - eventlog
+          - eventhealth
+          - patchhealth
+          - scheduledtask
+          - accountpolicy
+          - admingroup
+          - accountstate
+          - userrights
+          - auditpolicy
+          - securityoptions
+        qe_completed_scopes: []
       changed_when: false
       tags:
         - always
 
-    - name: Initialize QE suite failure state
+    - name: Determine requested SRV01 validation scopes
       ansible.builtin.set_fact:
-        qe_suite_failed: false
-        qe_failed_task: ""
-        qe_failure_message: ""
+        qe_requested_scopes: >-
+          {{
+            (
+              qe_supported_scopes
+              if 'all' in ansible_run_tags
+              else
+              (
+                qe_supported_scopes
+                | select('in', ansible_run_tags)
+                | list
+              )
+            )
+            | reject('in', ansible_skip_tags)
+            | list
+          }}
       changed_when: false
       tags:
         - always
@@ -30,8 +65,22 @@
           tags:
             - identity
 
+        - name: Record identity scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['identity'] }}"
+          changed_when: false
+          tags:
+            - identity
+
         - name: Validate Windows Time synchronization
           ansible.builtin.import_tasks: tasks/validate-time.yml
+          tags:
+            - time
+
+        - name: Record time scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['time'] }}"
+          changed_when: false
           tags:
             - time
 
@@ -40,8 +89,22 @@
           tags:
             - network
 
+        - name: Record network scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['network'] }}"
+          changed_when: false
+          tags:
+            - network
+
         - name: Validate Microsoft Defender health
           ansible.builtin.import_tasks: tasks/validate-defender.yml
+          tags:
+            - defender
+
+        - name: Record defender scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['defender'] }}"
+          changed_when: false
           tags:
             - defender
 
@@ -50,8 +113,22 @@
           tags:
             - services
 
+        - name: Record services scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['services'] }}"
+          changed_when: false
+          tags:
+            - services
+
         - name: Validate DNS client configuration
           ansible.builtin.import_tasks: tasks/validate-dns.yml
+          tags:
+            - dns
+
+        - name: Record DNS scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['dns'] }}"
+          changed_when: false
           tags:
             - dns
 
@@ -60,8 +137,22 @@
           tags:
             - features
 
+        - name: Record features scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['features'] }}"
+          changed_when: false
+          tags:
+            - features
+
         - name: Validate Windows Firewall configuration
           ansible.builtin.import_tasks: tasks/validate-firewall.yml
+          tags:
+            - firewall
+
+        - name: Record firewall scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['firewall'] }}"
+          changed_when: false
           tags:
             - firewall
 
@@ -70,8 +161,22 @@
           tags:
             - eventlog
 
+        - name: Record event log scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['eventlog'] }}"
+          changed_when: false
+          tags:
+            - eventlog
+
         - name: Validate recent System event health
           ansible.builtin.import_tasks: tasks/validate-event-health.yml
+          tags:
+            - eventhealth
+
+        - name: Record event health scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['eventhealth'] }}"
+          changed_when: false
           tags:
             - eventhealth
 
@@ -80,8 +185,22 @@
           tags:
             - patchhealth
 
+        - name: Record patch health scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['patchhealth'] }}"
+          changed_when: false
+          tags:
+            - patchhealth
+
         - name: Validate scheduled task configuration
           ansible.builtin.import_tasks: tasks/validate-scheduled-task.yml
+          tags:
+            - scheduledtask
+
+        - name: Record scheduled task scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['scheduledtask'] }}"
+          changed_when: false
           tags:
             - scheduledtask
 
@@ -90,8 +209,22 @@
           tags:
             - accountpolicy
 
+        - name: Record account policy scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['accountpolicy'] }}"
+          changed_when: false
+          tags:
+            - accountpolicy
+
         - name: Validate Administrators group membership
           ansible.builtin.import_tasks: tasks/validate-admin-group-membership.yml
+          tags:
+            - admingroup
+
+        - name: Record Administrators group scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['admingroup'] }}"
+          changed_when: false
           tags:
             - admingroup
 
@@ -100,8 +233,22 @@
           tags:
             - accountstate
 
+        - name: Record account state scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['accountstate'] }}"
+          changed_when: false
+          tags:
+            - accountstate
+
         - name: Validate User Rights Assignment
           ansible.builtin.import_tasks: tasks/validate-user-rights.yml
+          tags:
+            - userrights
+
+        - name: Record User Rights Assignment scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['userrights'] }}"
+          changed_when: false
           tags:
             - userrights
 
@@ -110,8 +257,22 @@
           tags:
             - auditpolicy
 
+        - name: Record audit policy scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['auditpolicy'] }}"
+          changed_when: false
+          tags:
+            - auditpolicy
+
         - name: Validate Windows Security Options
           ansible.builtin.import_tasks: tasks/validate-security-options.yml
+          tags:
+            - securityoptions
+
+        - name: Record security options scope completion
+          ansible.builtin.set_fact:
+            qe_completed_scopes: "{{ qe_completed_scopes + ['securityoptions'] }}"
+          changed_when: false
           tags:
             - securityoptions
 
@@ -134,6 +295,8 @@
           ansible.builtin.debug:
             msg:
               - "SRV01 QE Validation Summary"
+              - "Requested scopes: {{ qe_requested_scopes }}"
+              - "Completed scopes: {{ qe_completed_scopes }}"
               - "Expected identity: {{ server_identity }}"
               - "Expected Windows Time: {{ windows_time }}"
               - "Expected network configuration: {{ network_config }}"
@@ -163,9 +326,18 @@
           tags:
             - always
 
-        - name: Export QE results to JSON
+        - name: Export SRV01 QE coverage evidence to JSON
           ansible.builtin.copy:
-            content: "{{ qe_results | to_nice_json }}"
+            content: >-
+              {{
+                {
+                  'schema_version': 2,
+                  'requested_scopes': qe_requested_scopes,
+                  'completed_scopes': qe_completed_scopes,
+                  'results': qe_results
+                }
+                | to_nice_json
+              }}
             dest: "../reports/srv01-qe-results.json"
             mode: "0644"
           delegate_to: localhost
