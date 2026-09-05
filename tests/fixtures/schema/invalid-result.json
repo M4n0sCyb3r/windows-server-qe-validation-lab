@@ -1,0 +1,8 @@
+[
+  {
+    "test": "Malformed Result Status",
+    "expected": "Running",
+    "actual": "Running",
+    "result": "SUCCESS"
+  }
+]
