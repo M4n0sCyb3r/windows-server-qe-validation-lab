@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "framework": "Pester",
+  "framework_version": "3.4.0",
+  "total": 0,
+  "passed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "pending": 0,
+  "tests": []
+}
