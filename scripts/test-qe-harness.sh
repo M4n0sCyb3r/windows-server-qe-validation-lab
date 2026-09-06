@@ -167,6 +167,11 @@ check_exit_code \
     0 \
     ./scripts/test-host-workflow-evidence-contract.sh
 
+check_exit_code \
+    "Pester reporter evidence contract" \
+    0 \
+    ./scripts/test-pester-reporter.sh
+
 echo "QE Harness Self-Test"
 echo "--------------------"
 echo "Passed: $passed"

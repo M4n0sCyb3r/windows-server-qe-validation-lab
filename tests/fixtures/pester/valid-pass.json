@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "framework": "Pester",
+  "framework_version": "3.4.0",
+  "total": 2,
+  "passed": 2,
+  "failed": 0,
+  "skipped": 0,
+  "pending": 0,
+  "tests": [
+    {
+      "name": "WinRM service should exist",
+      "describe": "SRV01 Service Validation",
+      "context": "",
+      "result": "Passed",
+      "passed": true,
+      "duration_ms": 10.0,
+      "failure_message": ""
+    },
+    {
+      "name": "WinRM service should be running",
+      "describe": "SRV01 Service Validation",
+      "context": "",
+      "result": "Passed",
+      "passed": true,
+      "duration_ms": 10.0,
+      "failure_message": ""
+    }
+  ]
+}

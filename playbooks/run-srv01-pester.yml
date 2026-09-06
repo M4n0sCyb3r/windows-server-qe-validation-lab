@@ -1,0 +1,29 @@
+---
+- name: Run SRV01 Pester validation
+  hosts: srv01
+  gather_facts: false
+
+  tasks:
+    - name: Run Pester QE evidence collector
+      ansible.windows.win_powershell:
+        script: "{{ lookup('ansible.builtin.file', '../scripts/Invoke-PesterQe.ps1') }}"
+        parameters:
+          TestContent: "{{ lookup('ansible.builtin.file', '../tests/pester/SRV01.Services.Tests.ps1') }}"
+      register: pester_result
+      changed_when: false
+
+    - name: Parse Pester JSON evidence
+      ansible.builtin.set_fact:
+        pester_evidence: "{{ pester_result.output[0] | from_json }}"
+      changed_when: false
+
+    - name: Show structured Pester evidence
+      ansible.builtin.debug:
+        var: pester_evidence
+
+    - name: Export Pester QE evidence
+      ansible.builtin.copy:
+        content: "{{ pester_evidence | to_nice_json }}"
+        dest: "../reports/srv01-pester-results.json"
+        mode: "0600"
+      delegate_to: localhost
