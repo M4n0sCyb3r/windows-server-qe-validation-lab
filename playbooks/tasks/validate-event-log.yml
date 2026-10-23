@@ -1,27 +1,45 @@
 ---
-- name: Collect System event log configuration
+# System event log configuration - expected vs actual.
+#
+# The maximum size is read THREE ways and all three must match the baseline (fixed 2026-10-23,
+# found by agentic-lab P06 build step 5): the classic API (Limit-EventLog) writes the registry
+# value MaxSize, which Get-WinEvent -ListLog did not show - a System log raised to 64 MB read
+# 64 MB in the registry and the classic API and 20 MB through Get-WinEvent, so this check passed.
+# The result is also now RECORDED before the assert, like the other task files: in the fail-fast
+# suite an assert that fires first sends a real FAIL to rescue unrecorded (reported as an
+# incomplete run, exit 2, instead of a FAIL, exit 1).
+
+- name: Collect System event log configuration (three readings of the maximum size)
   ansible.windows.win_powershell:
     script: |
       $log = Get-WinEvent -ListLog System
+      $regKey = 'HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\System'
+      $reg = (Get-ItemProperty -LiteralPath $regKey -Name MaxSize -ErrorAction SilentlyContinue).MaxSize
+      $classic = (Get-EventLog -List | Where-Object { $_.Log -eq 'System' }).MaximumKilobytes
 
       [PSCustomObject]@{
-          LogName            = $log.LogName
-          IsEnabled          = [bool]$log.IsEnabled
-          MaximumSizeInBytes = [int64]$log.MaximumSizeInBytes
-          LogMode            = [string]$log.LogMode
+          LogName                   = $log.LogName
+          IsEnabled                 = [bool]$log.IsEnabled
+          MaximumSizeInBytes        = [int64]$log.MaximumSizeInBytes
+          RegistryMaxSizeBytes      = if ($null -ne $reg) { [int64]$reg } else { -1 }
+          ClassicMaximumSizeBytes   = if ($null -ne $classic) { [int64]$classic * 1024 } else { -1 }
+          LogMode                   = [string]$log.LogMode
       }
   register: event_log_result
   changed_when: false
 
-- name: Validate System event log configuration
-  ansible.builtin.assert:
-    that:
-      - (event_log_result.output[0].IsEnabled | bool) == (system_event_log.enabled | bool)
-      - (event_log_result.output[0].MaximumSizeInBytes | int) == (system_event_log.maximum_size_bytes | int)
-      - event_log_result.output[0].LogMode == system_event_log.log_mode
-    quiet: true
-    success_msg: "PASS: System event log configuration matches baseline"
-    fail_msg: "FAIL: System event log configuration does not match baseline"
+- name: Calculate System event log result
+  ansible.builtin.set_fact:
+    event_log_actual: "{{ event_log_result.output[0] }}"
+    event_log_passed: >-
+      {{
+        (event_log_result.output[0].IsEnabled | bool) == (system_event_log.enabled | bool)
+        and (event_log_result.output[0].MaximumSizeInBytes | int) == (system_event_log.maximum_size_bytes | int)
+        and (event_log_result.output[0].RegistryMaxSizeBytes | int) == (system_event_log.maximum_size_bytes | int)
+        and (event_log_result.output[0].ClassicMaximumSizeBytes | int) == (system_event_log.maximum_size_bytes | int)
+        and event_log_result.output[0].LogMode == system_event_log.log_mode
+      }}
+  changed_when: false
 
 - name: Report System event log validation result
   ansible.builtin.debug:
@@ -32,21 +50,12 @@
         maximum_size_bytes: "{{ system_event_log.maximum_size_bytes | int }}"
         log_mode: "{{ system_event_log.log_mode }}"
       actual:
-        enabled: "{{ event_log_result.output[0].IsEnabled | bool }}"
-        maximum_size_bytes: "{{ event_log_result.output[0].MaximumSizeInBytes | int }}"
-        log_mode: "{{ event_log_result.output[0].LogMode }}"
-      result: >-
-        {{
-          'PASS'
-          if
-            (event_log_result.output[0].IsEnabled | bool) == (system_event_log.enabled | bool)
-            and
-            (event_log_result.output[0].MaximumSizeInBytes | int) == (system_event_log.maximum_size_bytes | int)
-            and
-            event_log_result.output[0].LogMode == system_event_log.log_mode
-          else
-            'FAIL'
-        }}
+        enabled: "{{ event_log_actual.IsEnabled | bool }}"
+        maximum_size_bytes: "{{ event_log_actual.MaximumSizeInBytes | int }}"
+        registry_max_size_bytes: "{{ event_log_actual.RegistryMaxSizeBytes | int }}"
+        classic_maximum_size_bytes: "{{ event_log_actual.ClassicMaximumSizeBytes | int }}"
+        log_mode: "{{ event_log_actual.LogMode }}"
+      result: "{{ 'PASS' if event_log_passed | bool else 'FAIL' }}"
 
 - name: Add System event log result to QE results
   ansible.builtin.set_fact:
@@ -62,22 +71,22 @@
                 'log_mode': system_event_log.log_mode
               },
               'actual': {
-                'enabled': event_log_result.output[0].IsEnabled | bool,
-                'maximum_size_bytes': event_log_result.output[0].MaximumSizeInBytes | int,
-                'log_mode': event_log_result.output[0].LogMode
+                'enabled': event_log_actual.IsEnabled | bool,
+                'maximum_size_bytes': event_log_actual.MaximumSizeInBytes | int,
+                'registry_max_size_bytes': event_log_actual.RegistryMaxSizeBytes | int,
+                'classic_maximum_size_bytes': event_log_actual.ClassicMaximumSizeBytes | int,
+                'log_mode': event_log_actual.LogMode
               },
-              'result': (
-                'PASS'
-                if
-                  (event_log_result.output[0].IsEnabled | bool) == (system_event_log.enabled | bool)
-                  and
-                  (event_log_result.output[0].MaximumSizeInBytes | int) == (system_event_log.maximum_size_bytes | int)
-                  and
-                  event_log_result.output[0].LogMode == system_event_log.log_mode
-                else
-                  'FAIL'
-              )
+              'result': ('PASS' if event_log_passed | bool else 'FAIL')
             }
           ]
       }}
   changed_when: false
+
+- name: Assert System event log configuration matches baseline
+  ansible.builtin.assert:
+    that:
+      - event_log_passed | bool
+    quiet: true
+    success_msg: "PASS: System event log configuration matches baseline"
+    fail_msg: "FAIL: System event log configuration does not match baseline (any of the three size readings differs, or enabled/mode)"
